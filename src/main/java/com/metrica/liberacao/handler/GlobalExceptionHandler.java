@@ -9,6 +9,7 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
 import java.time.LocalDateTime;
+import java.util.HashMap;
 import java.util.Map;
 
 @RestControllerAdvice
@@ -67,6 +68,20 @@ public class GlobalExceptionHandler {
                         "erro", "Arquivo inválido",
                         "mensagem", ex.getMessage()
                 ));
+    }
+
+    @ExceptionHandler(Exception.class)
+    public ResponseEntity<?> handleAllExceptions(Exception ex) {
+        Map<String, Object> erro = new HashMap<>();
+        erro.put("timestamp", LocalDateTime.now());
+        erro.put("tipo", ex.getClass().getSimpleName());
+        erro.put("mensagem", ex.getMessage());
+        erro.put("causa", ex.getCause() != null ? ex.getCause().toString() : "N/A");
+
+        System.err.println("=== [ERRO GLOBAL] ===");
+        ex.printStackTrace();
+
+        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(erro);
     }
 
 }
