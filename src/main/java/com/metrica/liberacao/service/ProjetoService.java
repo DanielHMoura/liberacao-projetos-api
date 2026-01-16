@@ -5,14 +5,11 @@ import com.metrica.liberacao.domain.status.StatusAnteprojeto;
 import com.metrica.liberacao.domain.status.StatusExecutivo;
 import com.metrica.liberacao.dto.*;
 import com.metrica.liberacao.exception.AcessoInvalidoException;
-import com.metrica.liberacao.exception.ResourceNotFoundException;
 import com.metrica.liberacao.repository.ProjetoRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
-import java.math.BigDecimal;
-import java.math.RoundingMode;
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
 
@@ -73,14 +70,6 @@ public class ProjetoService {
         response.setAnteprojetoLiberado(anteprojetoPago);
         response.setExecutivoLiberado(executivoPago);
 
-        if (!anteprojetoPago || !executivoPago) {
-            String txId = !anteprojetoPago ? "ANTE" + projeto.getId() : "EXEC" + projeto.getId();
-            BigDecimal valor = !anteprojetoPago ? projeto.getValorAnteprojeto() : projeto.getValorExecutivo();
-            String payload = gerarPayloadPix("13246316600", "JAQUELINE", "BETIM",
-                    valor.setScale(2, RoundingMode.HALF_UP).toString(), txId);
-            response.setQrCode(payload);
-        }
-
         if (anteprojetoPago && executivoPago) {
             response.setMensagem("Todos os projetos liberados para download.");
         } else if (anteprojetoPago) {
@@ -136,11 +125,15 @@ public class ProjetoService {
         Projeto projeto = buscarProjetoPorCodigoEPin(codigoAcesso, pinAcesso);
 
         if (projeto.getStatusAnteprojeto() != StatusAnteprojeto.PAGO) {
-            throw new AcessoInvalidoException("Anteprojeto ainda não foi pago. Status atual: " + projeto.getStatusAnteprojeto());
+            throw new AcessoInvalidoException(
+                    "Anteprojeto ainda não foi pago. Status atual: " + projeto.getStatusAnteprojeto()
+            );
         }
 
         if (projeto.getPdfAnteprojeto() == null || projeto.getPdfAnteprojeto().length == 0) {
-            throw new AcessoInvalidoException("PDF do anteprojeto não encontrado. Entre em contato com o administrador.");
+            throw new AcessoInvalidoException(
+                    "PDF do anteprojeto não encontrado. Entre em contato com o administrador."
+            );
         }
 
         return projeto.getPdfAnteprojeto();
@@ -150,11 +143,15 @@ public class ProjetoService {
         Projeto projeto = buscarProjetoPorCodigoEPin(codigoAcesso, pinAcesso);
 
         if (projeto.getStatusExecutivo() != StatusExecutivo.PAGO) {
-            throw new AcessoInvalidoException("Projeto executivo ainda não foi pago. Status atual: " + projeto.getStatusExecutivo());
+            throw new AcessoInvalidoException(
+                    "Projeto executivo ainda não foi pago. Status atual: " + projeto.getStatusExecutivo()
+            );
         }
 
         if (projeto.getPdfExecutivo() == null || projeto.getPdfExecutivo().length == 0) {
-            throw new AcessoInvalidoException("PDF do executivo não encontrado. Entre em contato com o administrador.");
+            throw new AcessoInvalidoException(
+                    "PDF do executivo não encontrado. Entre em contato com o administrador."
+            );
         }
 
         return projeto.getPdfExecutivo();
@@ -175,7 +172,7 @@ public class ProjetoService {
         response.setStatusAnteprojeto(projeto.getStatusAnteprojeto().toString());
 
         if (projeto.getStatusAnteprojeto() == StatusAnteprojeto.AGUARDANDO_PAGAMENTO) {
-            configurarPagamentoAnteprojeto(projeto, response);
+            configurarDownloadAnteprojeto(projeto, response);
         } else if (projeto.getStatusAnteprojeto() == StatusAnteprojeto.PAGO) {
             configurarDownloadAnteprojeto(projeto, response);
         }
@@ -189,35 +186,23 @@ public class ProjetoService {
         response.setStatusExecutivo(projeto.getStatusExecutivo().toString());
 
         if (projeto.getStatusExecutivo() == StatusExecutivo.AGUARDANDO_PAGAMENTO) {
-            configurarPagamentoExecutivo(projeto, response);
+            configurarDownloadExecutivo(projeto, response);
         } else if (projeto.getStatusExecutivo() == StatusExecutivo.PAGO) {
             configurarDownloadExecutivo(projeto, response);
         }
     }
 
-    private void configurarPagamentoAnteprojeto(Projeto projeto, StatusProjetoResponse response) {
-        response.setValorAnteprojeto(String.format("R$ %.2f", projeto.getValorAnteprojeto()));
-        response.setAnteprojetoDisponivelDownload(false);
-        response.setMensagem("Realize o pagamento do anteprojeto para ter acesso ao PDF.");
 
-        String txId = "ANTE" + projeto.getId();
-        gerarQrCodePix(projeto.getValorAnteprojeto(), txId, response, true);
-    }
-
-    private void configurarPagamentoExecutivo(Projeto projeto, StatusProjetoResponse response) {
-        response.setValorExecutivo(String.format("R$ %.2f", projeto.getValorExecutivo()));
-        response.setExecutivoDisponivelDownload(false);
-        response.setMensagem("Anteprojeto pago. Realize o pagamento do executivo para ter acesso ao PDF final.");
-
-        String txId = "EXEC" + projeto.getId();
-        gerarQrCodePix(projeto.getValorExecutivo(), txId, response, false);
+    private int calcularDiasRestantes(LocalDateTime dataPagamento) {
+        long diasDesdePagemento = ChronoUnit.DAYS.between(dataPagamento, LocalDateTime.now());
+        return 7 - (int) diasDesdePagemento;
     }
 
     private void configurarDownloadAnteprojeto(Projeto projeto, StatusProjetoResponse response) {
         LocalDateTime dataPagamento = projeto.getDataPagamentoAnteprojeto();
 
         if (dataPagamento == null) {
-            throw new RuntimeException("Data de pagamento do anteprojeto não registrada");
+            throw new IllegalStateException("Data de pagamento do anteprojeto não registrada");
         }
 
         int diasRestantes = calcularDiasRestantes(dataPagamento);
@@ -236,7 +221,7 @@ public class ProjetoService {
         LocalDateTime dataPagamento = projeto.getDataPagamentoExecutivo();
 
         if (dataPagamento == null) {
-            throw new RuntimeException("Data de pagamento do executivo não registrada");
+            throw new IllegalStateException("Data de pagamento do executivo não registrada");
         }
 
         int diasRestantes = calcularDiasRestantes(dataPagamento);
@@ -249,110 +234,8 @@ public class ProjetoService {
             response.setExecutivoDisponivelDownload(false);
             response.setMensagem("Prazo de download do executivo expirado.");
         }
-    }
 
-    private int calcularDiasRestantes(LocalDateTime dataPagamento) {
-        long diasDesdePagemento = ChronoUnit.DAYS.between(dataPagamento, LocalDateTime.now());
-        return 7 - (int) diasDesdePagemento;
-    }
 
-    private void gerarQrCodePix(BigDecimal valor, String txId, StatusProjetoResponse response, boolean isAnteprojeto) {
-        String pixKey = "13246316600";
-        String pixName = "JAQUELINE";
-        String pixCity = "BETIM";
-        String valorStr = valor.setScale(2, RoundingMode.HALF_UP).toString();
-
-        String payload = gerarPayloadPix(pixKey, pixName, pixCity, valorStr, txId);
-
-        if (isAnteprojeto) {
-            response.setPixPayloadAnteprojeto(payload);
-            response.setQrcodeAnteprojeto(null);
-        } else {
-            response.setPixPayloadExecutivo(payload);
-            response.setQrcodeExecutivo(null);
-        }
-    }
-
-    private String gerarPayloadPix(String pixKey, String name, String city, String amount, String txId) {
-        String merchantAccount = "0014BR.GOV.BCB.PIX01" + String.format("%02d", pixKey.length()) + pixKey;
-        String merchantCategory = "52040000";
-        String currency = "5303986";
-        String transactionAmount = "54" + String.format("%02d", amount.length()) + amount;
-        String countryCode = "5802BR";
-        String merchantName = "59" + String.format("%02d", name.length()) + name;
-        String merchantCity = "60" + String.format("%02d", city.length()) + city;
-        String additionalInfo = "62" + String.format("%02d", 8 + txId.length()) + "05" + String.format("%02d", txId.length()) + txId;
-
-        String payload = "00020126" + String.format("%02d", merchantAccount.length()) + merchantAccount
-                + merchantCategory + currency + transactionAmount + countryCode
-                + merchantName + merchantCity + additionalInfo + "6304";
-
-        String crc = calcularCRC16(payload);
-        return payload + crc;
-    }
-
-    private String calcularCRC16(String payload) {
-        int crc = 0xFFFF;
-        byte[] bytes = payload.getBytes();
-
-        for (byte b : bytes) {
-            crc ^= (b & 0xFF) << 8;
-            for (int i = 0; i < 8; i++) {
-                if ((crc & 0x8000) != 0) {
-                    crc = (crc << 1) ^ 0x1021;
-                } else {
-                    crc <<= 1;
-                }
-            }
-        }
-
-        return String.format("%04X", crc & 0xFFFF);
-    }
-
-    private void esconderAnteprojeto(Projeto projeto, StatusProjetoResponse response) {
-        // Se estiver PRONTO, torna invisível no front-end: status vazio e limpa campos relacionados
-        if (projeto.getStatusAnteprojeto() == StatusAnteprojeto.PRONTO) {
-            response.setStatusAnteprojeto(""); // invisível para o front-end
-            response.setAnteprojetoDisponivelDownload(false);
-            response.setValorAnteprojeto("");
-            response.setDiasRestantesAnteprojeto(0);
-            response.setMensagem("");
-            response.setPixPayloadAnteprojeto("");
-            response.setQrcodeAnteprojeto("");
-            return;
-        }
-
-        // Caso normal: expõe o status e configura comportamento conforme o estado
-        response.setStatusAnteprojeto(projeto.getStatusAnteprojeto().toString());
-
-        if (projeto.getStatusAnteprojeto() == StatusAnteprojeto.AGUARDANDO_PAGAMENTO) {
-            configurarPagamentoAnteprojeto(projeto, response);
-        } else if (projeto.getStatusAnteprojeto() == StatusAnteprojeto.PAGO) {
-            configurarDownloadAnteprojeto(projeto, response);
-        }
-    }
-
-    private void esconderExecutivo(Projeto projeto, StatusProjetoResponse response) {
-        // Se estiver PRONTO, torna invisível no front-end: status vazio e limpa campos relacionados
-        if (projeto.getStatusExecutivo() == StatusExecutivo.PRONTO) {
-            response.setStatusExecutivo(""); // invisível para o front-end
-            response.setExecutivoDisponivelDownload(false);
-            response.setValorExecutivo("");
-            response.setDiasRestantesAnteprojeto(0);
-            response.setMensagem("");
-            response.setPixPayloadExecutivo("");
-            response.setQrcodeExecutivo("");
-            return;
-        }
-
-        // Caso normal: expõe o status e configura comportamento conforme o estado
-        response.setStatusExecutivo(projeto.getStatusExecutivo().toString());
-
-        if (projeto.getStatusExecutivo() == StatusExecutivo.AGUARDANDO_PAGAMENTO) {
-            configurarPagamentoExecutivo(projeto, response);
-        } else if (projeto.getStatusExecutivo() == StatusExecutivo.PAGO) {
-            configurarDownloadExecutivo(projeto, response);
-        }
     }
 
 
