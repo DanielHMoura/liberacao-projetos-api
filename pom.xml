@@ -118,7 +118,7 @@
 				<groupId>org.springframework.boot</groupId>
 				<artifactId>spring-boot-maven-plugin</artifactId>
 				<configuration>
-					<mainClass>com.moura.liberacao.LiberacaoApplication</mainClass>
+					<mainClass>com.metrica.liberacao.LiberacaoApplication</mainClass>  <!-- ✅ CORRETO -->
 				</configuration>
 			</plugin>
 
