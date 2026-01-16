@@ -16,17 +16,18 @@ import java.util.Collections;
 public class CustomUserDetailsService implements UserDetailsService {
 
     @Autowired
-    private AdminRepository adminRepository;
+    private UsuarioRepository usuarioRepository;
 
     @Override
     public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
-        Admin admin = adminRepository.findByUsername(username)
-                .orElseThrow(() -> new UsernameNotFoundException("Usuário não encontrado: " + username));
+        Usuario usuario = usuarioRepository.findByUsername(username)
+                .orElseThrow(() -> new UsernameNotFoundException("Usuário não encontrado"));
 
-        return new User(
-                admin.getUsername(),
-                admin.getPassword(),
-                Collections.singletonList(new SimpleGrantedAuthority(admin.getRole()))
-        );
+        return User.builder()
+                .username(usuario.getUsername())
+                .password(usuario.getPassword()) // Senha já criptografada do banco
+                .authorities("ROLE_USER")
+                .build();
     }
 }
+
