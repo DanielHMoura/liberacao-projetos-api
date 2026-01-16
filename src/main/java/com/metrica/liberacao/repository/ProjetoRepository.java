@@ -4,7 +4,6 @@ import com.metrica.liberacao.domain.Projeto;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.util.Optional;
-import java.util.UUID;
 
 /**
  * Repositório para gerenciar operações de persistência da entidade {@link Projeto}.
@@ -25,4 +24,13 @@ public interface ProjetoRepository extends JpaRepository<Projeto, Long> {
      * @return um {@link Optional} contendo o projeto se encontrado, ou vazio caso contrário
      */
     Optional<Projeto> findByCodigoAcesso(String codigoAcesso);
+
+    /**
+     * Busca um projeto pelo código de acesso e PIN de acesso.
+     *
+     * @param codigoAcesso o código de acesso único do projeto
+     * @param pinAcesso o PIN de acesso do projeto
+     * @return um {@link Optional} contendo o projeto se encontrado, ou vazio caso contrário
+     */
+    Optional<Projeto> findByCodigoAcessoAndPinAcesso(String codigoAcesso, String pinAcesso);
 }

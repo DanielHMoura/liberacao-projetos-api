@@ -58,15 +58,11 @@ public class ProjetoService {
      * Busca projeto por código de acesso + PIN (Cliente)
      */
     public Projeto buscarProjetoPorCodigoEPin(String codigoAcesso, String pinAcesso) {
-        Projeto projeto = projetoRepository.findByCodigoAcesso(codigoAcesso)
-                .orElseThrow(() -> new IllegalArgumentException("Projeto não encontrado com código: " + codigoAcesso));
-
-        if (!projeto.getPinAcesso().equals(pinAcesso)) {
-            throw new AcessoInvalidoException(pinAcesso);
-        }
-
-        return projeto;
+        // Busca código E PIN juntos no banco de dados
+        return projetoRepository.findByCodigoAcessoAndPinAcesso(codigoAcesso, pinAcesso)
+                .orElseThrow(() -> new AcessoInvalidoException("Código ou PIN inválidos"));
     }
+
 
     /**
      * Salva projeto (usado para atualizações)
