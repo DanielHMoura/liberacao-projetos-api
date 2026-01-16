@@ -42,11 +42,9 @@ public class Projeto {
     @Enumerated(EnumType.STRING)
     private StatusExecutivo statusExecutivo;
 
-    @Lob
     @Column(name = "pdf_anteprojeto_conteudo")
     private byte[] pdfAnteprojeto;
 
-    @Lob
     @Column(name = "pdf_executivo_conteudo")
 
     private byte[] pdfExecutivo;

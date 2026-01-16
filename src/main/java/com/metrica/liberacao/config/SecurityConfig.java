@@ -29,6 +29,7 @@ public class SecurityConfig {
                         .requestMatchers("/projetos/liberacao").permitAll()
                         .requestMatchers("/projetos/buscar").permitAll()
                         .requestMatchers("/projetos/baixar-pdf").permitAll()
+                        .requestMatchers("/api/pix/gerar-qrcode").permitAll()
                         .requestMatchers("/projetos/download/**").permitAll()
                         // Rotas administrativas
                         .anyRequest().authenticated()
