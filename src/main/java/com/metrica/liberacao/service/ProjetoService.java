@@ -126,9 +126,9 @@ public class ProjetoService {
             throw new IllegalArgumentException("Apenas arquivos PDF são permitidos");
         }
 
-        long tamanhoMaximo = 10 * 1024 * 1024;
+        long tamanhoMaximo = 80 * 1024 * 1024;
         if (file.getSize() > tamanhoMaximo) {
-            throw new IllegalArgumentException("Arquivo muito grande (máximo: 10MB)");
+            throw new IllegalArgumentException("Arquivo muito grande (máximo: 80MB)");
         }
     }
 
