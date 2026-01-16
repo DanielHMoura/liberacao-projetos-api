@@ -24,8 +24,13 @@ public class SecurityConfig {
         http
                 .csrf(csrf -> csrf.disable())
                 .authorizeHttpRequests(auth -> auth
+                        // Rotas públicas (clientes)
                         .requestMatchers("/api/auth/login").permitAll()
+                        .requestMatchers("/projetos/liberacao").permitAll()
+                        .requestMatchers("/projetos/buscar").permitAll()
                         .requestMatchers("/projetos/baixar-pdf").permitAll()
+                        .requestMatchers("/projetos/download/**").permitAll()
+                        // Rotas administrativas
                         .anyRequest().authenticated()
                 )
                 .httpBasic(Customizer.withDefaults());
@@ -47,7 +52,7 @@ public class SecurityConfig {
     public UserDetailsService userDetailsService() {
         UserDetails admin = User.builder()
                 .username("admin")
-                .password(passwordEncoder().encode("senha123")) // Senha: admin123
+                .password(passwordEncoder().encode("senha123"))
                 .roles("ADMIN")
                 .build();
 
