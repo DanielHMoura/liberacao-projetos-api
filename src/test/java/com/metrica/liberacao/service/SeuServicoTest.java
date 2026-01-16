@@ -15,7 +15,7 @@ import static org.mockito.Mockito.*;
 import static org.junit.jupiter.api.Assertions.*;
 import java.util.Optional;
 
-@ExtendWith(MockitoExtension.class)
+@ExtendWith(MockitoExtension.class) // ← Apenas essa anotação
 class SeuServicoTest {
 
     @Mock
@@ -24,7 +24,8 @@ class SeuServicoTest {
     @InjectMocks
     private ProjetoService servico;
 
-    @Test
+
+@Test
     void testBaixarPdfAnteprojeto_Sucesso() {
         String codigoAcesso = "ABC123";
         String pinValido = "1234";

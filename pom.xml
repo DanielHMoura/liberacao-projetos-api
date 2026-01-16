@@ -44,8 +44,9 @@
 		<dependency>
 			<groupId>com.h2database</groupId>
 			<artifactId>h2</artifactId>
-			<scope>runtime</scope>
+			<scope>test</scope>
 		</dependency>
+
 
 		<!-- JWT (Apenas versão 0.12.3) -->
 		<dependency>

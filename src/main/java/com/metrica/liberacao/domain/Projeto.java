@@ -24,11 +24,9 @@ public class Projeto {
     @Column(nullable = false)
     private String nomeCliente;
 
-    @Enumerated(EnumType.STRING)
     @Column(name = "valor_anteprojeto", nullable = true)
     private BigDecimal valorAnteprojeto;
 
-    @Enumerated(EnumType.STRING)
     @Column(name = "valor_executivo", nullable = true)
     private BigDecimal valorExecutivo;
 

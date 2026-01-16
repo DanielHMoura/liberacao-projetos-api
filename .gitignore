@@ -63,6 +63,3 @@ application-local.properties
 secrets.yml
 config/secrets.yml
 
-application-prod.properties
-application-local.properties
-.env
