@@ -308,4 +308,52 @@ public class ProjetoService {
 
         return String.format("%04X", crc & 0xFFFF);
     }
+
+    private void esconderAnteprojeto(Projeto projeto, StatusProjetoResponse response) {
+        // Se estiver PRONTO, torna invisível no front-end: status vazio e limpa campos relacionados
+        if (projeto.getStatusAnteprojeto() == StatusAnteprojeto.PRONTO) {
+            response.setStatusAnteprojeto(""); // invisível para o front-end
+            response.setAnteprojetoDisponivelDownload(false);
+            response.setValorAnteprojeto("");
+            response.setDiasRestantesAnteprojeto(0);
+            response.setMensagem("");
+            response.setPixPayloadAnteprojeto("");
+            response.setQrcodeAnteprojeto("");
+            return;
+        }
+
+        // Caso normal: expõe o status e configura comportamento conforme o estado
+        response.setStatusAnteprojeto(projeto.getStatusAnteprojeto().toString());
+
+        if (projeto.getStatusAnteprojeto() == StatusAnteprojeto.AGUARDANDO_PAGAMENTO) {
+            configurarPagamentoAnteprojeto(projeto, response);
+        } else if (projeto.getStatusAnteprojeto() == StatusAnteprojeto.PAGO) {
+            configurarDownloadAnteprojeto(projeto, response);
+        }
+    }
+
+    private void esconderExecutivo(Projeto projeto, StatusProjetoResponse response) {
+        // Se estiver PRONTO, torna invisível no front-end: status vazio e limpa campos relacionados
+        if (projeto.getStatusExecutivo() == StatusExecutivo.PRONTO) {
+            response.setStatusExecutivo(""); // invisível para o front-end
+            response.setExecutivoDisponivelDownload(false);
+            response.setValorExecutivo("");
+            response.setDiasRestantesAnteprojeto(0);
+            response.setMensagem("");
+            response.setPixPayloadExecutivo("");
+            response.setQrcodeExecutivo("");
+            return;
+        }
+
+        // Caso normal: expõe o status e configura comportamento conforme o estado
+        response.setStatusExecutivo(projeto.getStatusExecutivo().toString());
+
+        if (projeto.getStatusExecutivo() == StatusExecutivo.AGUARDANDO_PAGAMENTO) {
+            configurarPagamentoExecutivo(projeto, response);
+        } else if (projeto.getStatusExecutivo() == StatusExecutivo.PAGO) {
+            configurarDownloadExecutivo(projeto, response);
+        }
+    }
+
+
 }
