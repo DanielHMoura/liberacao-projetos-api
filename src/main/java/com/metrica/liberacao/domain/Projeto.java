@@ -4,6 +4,7 @@ import com.metrica.liberacao.domain.status.StatusAnteprojeto;
 import com.metrica.liberacao.domain.status.StatusExecutivo;
 import jakarta.persistence.*;
 
+import java.math.BigDecimal;
 import java.util.UUID;
 
 @Entity
@@ -23,6 +24,11 @@ public class Projeto {
     @Column(nullable = false)
     private String nomeCliente;
 
+    @Column(name = "preco_anteprojeto", precision = 10, scale = 2)
+    private BigDecimal precoAnteprojeto;
+
+    @Column(name = "preco_executivo", precision = 10, scale = 2)
+    private BigDecimal precoExecutivo;
 
     @Enumerated(EnumType.STRING)
     private StatusAnteprojeto statusAnteprojeto;
@@ -69,4 +75,9 @@ public class Projeto {
     public byte[] getPdfExecutivo() {return pdfExecutivo;}
     public void setPdfExecutivo(byte[] pdfExecutivo) {this.pdfExecutivo = pdfExecutivo;}
 
+    public BigDecimal getPrecoAnteprojeto() {return precoAnteprojeto;}
+    public void setPrecoAnteprojeto(BigDecimal precoAnteprojeto) {this.precoAnteprojeto = precoAnteprojeto;}
+
+    public BigDecimal getPrecoExecutivo() {return precoExecutivo;}
+    public void setPrecoExecutivo(BigDecimal precoExecutivo) {this.precoExecutivo = precoExecutivo;}
 }
