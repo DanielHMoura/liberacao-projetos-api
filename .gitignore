@@ -31,3 +31,38 @@ build/
 
 ### VS Code ###
 .vscode/
+
+### Dados Sensíveis ###
+application.properties
+application-prod.properties
+application-local.properties
+.env
+.env.local
+*.env
+
+### Banco de Dados ###
+*.db
+*.sqlite
+*.sqlite3
+/data/
+/database/
+
+### PostgreSQL ###
+*.sql
+*.backup
+*.dump
+/pgdata/
+
+### Uploads e Arquivos ###
+/uploads/
+/temp/
+/logs/
+*.log
+
+### Secrets ###
+secrets.yml
+config/secrets.yml
+
+application-prod.properties
+application-local.properties
+.env
