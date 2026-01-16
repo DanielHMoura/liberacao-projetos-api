@@ -62,5 +62,5 @@ application-local.properties
 ### Secrets ###
 secrets.yml
 config/secrets.yml
-application-prod.properties
+
 
