@@ -2,11 +2,11 @@ package com.metrica.liberacao.dto;
 
 public class ValidarAcessoRequest {
 
-    private Long projetoId;
+    private String codigoAcesso;
     private String pinAcesso;
 
-    public Long getProjetoId() {return projetoId;}
-    public void setProjetoId(Long projetoId) {this.projetoId = projetoId;}
+    public String getCodigoAcesso() {return codigoAcesso;}
+    public void setCodigoAcesso(String codigoAcesso) {this.codigoAcesso = codigoAcesso;}
 
     public String getPinAcesso() {return pinAcesso;}
     public void setPinAcesso(String pinAcesso) {this.pinAcesso = pinAcesso;}

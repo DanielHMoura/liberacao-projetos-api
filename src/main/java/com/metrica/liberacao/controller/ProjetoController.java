@@ -7,7 +7,9 @@ import com.metrica.liberacao.dto.CriarProjetoRequest;
 import com.metrica.liberacao.dto.LiberacaoResponse;
 import com.metrica.liberacao.dto.ValidarAcessoRequest;
 import com.metrica.liberacao.service.ProjetoService;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
@@ -24,58 +26,68 @@ public class ProjetoController {
         this.projetoService = projetoService;
     }
 
+    // ========== ROTAS PARA ADMIN (usa ID interno) ==========
+
+    /**
+     * Admin cria novo projeto
+     * POST /projetos
+     */
     @PostMapping
     public ResponseEntity<Projeto> criar(@RequestBody CriarProjetoRequest request) {
         Projeto projeto = projetoService.criarProjeto(request);
         return ResponseEntity.status(HttpStatus.CREATED).body(projeto);
     }
 
+    /**
+     * Admin busca projeto por ID interno
+     * GET /projetos/{id}
+     */
     @GetMapping("/{id}")
-    public Projeto buscarProjetoPorId(@PathVariable Long id) {
-        return projetoService.buscarProjetoOuFalhar(id);
+    public ResponseEntity<Projeto> buscarProjetoPorId(@PathVariable Long id) {
+        Projeto projeto = projetoService.buscarProjetoOuFalhar(id);
+        return ResponseEntity.ok(projeto);
     }
 
-    // ✅ NOVO: Retorna lista de projetos com QR Code se estiver PENDENTE/PRONTO
-    @PostMapping("/liberacao")
-    public ResponseEntity<LiberacaoResponse> verificarLiberacao(@RequestBody ValidarAcessoRequest request) {
-        LiberacaoResponse response = projetoService.verificarLiberacao(request);
-        return ResponseEntity.ok(response);
-    }
-
-    @GetMapping("/{id}/download/anteprojeto")
-    public ResponseEntity<byte[]> downloadAnteprojeto(@PathVariable Long id, @RequestParam String pinAcesso) {
-        byte[] conteudo = projetoService.baixarPdfAnteprojeto(id, pinAcesso);
-
-        return ResponseEntity.ok()
-                .header("Content-Disposition", "attachment; filename=\"anteprojeto.pdf\"")
-                .header("Content-Type", "application/pdf")
-                .body(conteudo);
-    }
-
-    @GetMapping("/{id}/download/executivo")
-    public ResponseEntity<byte[]> downloadExecutivo(@PathVariable Long id, @RequestParam String pinAcesso) {
-        byte[] conteudo = projetoService.baixarPdfExecutivo(id, pinAcesso);
-
-        return ResponseEntity.ok()
-                .header("Content-Disposition", "attachment; filename=\"executivo.pdf\"")
-                .header("Content-Type", "application/pdf")
-                .body(conteudo);
-    }
-
+    /**
+     * Admin faz upload do PDF Anteprojeto
+     * POST /projetos/{id}/upload/anteprojeto
+     */
     @PostMapping("/{id}/upload/anteprojeto")
-    public String uploadAnteprojeto(@PathVariable Long id, @RequestParam("file") MultipartFile file) {
+    public ResponseEntity<Map<String, String>> uploadAnteprojeto(
+            @PathVariable Long id,
+            @RequestParam("file") MultipartFile file) {
+
         projetoService.salvarPdfAnteprojeto(id, file);
-        return "PDF do anteprojeto enviado para o projeto com id: " + id;
+
+        return ResponseEntity.ok(Map.of(
+                "mensagem", "PDF do anteprojeto enviado com sucesso",
+                "projetoId", id.toString()
+        ));
     }
 
+    /**
+     * Admin faz upload do PDF Executivo
+     * POST /projetos/{id}/upload/executivo
+     */
     @PostMapping("/{id}/upload/executivo")
-    public String uploadExecutivo(@PathVariable Long id, @RequestParam("file") MultipartFile file) {
+    public ResponseEntity<Map<String, String>> uploadExecutivo(
+            @PathVariable Long id,
+            @RequestParam("file") MultipartFile file) {
+
         projetoService.salvarPdfExecutivo(id, file);
-        return "PDF do executivo enviado para o projeto com id: " + id;
+
+        return ResponseEntity.ok(Map.of(
+                "mensagem", "PDF do executivo enviado com sucesso",
+                "projetoId", id.toString()
+        ));
     }
 
+    /**
+     * Admin atualiza status de pagamento do Anteprojeto
+     * PATCH /projetos/{id}/admin/status-pagamento/anteprojeto
+     */
     @PatchMapping("/{id}/admin/status-pagamento/anteprojeto")
-    public ResponseEntity<?> adminAtualizarStatusPagamentoAnteprojeto(
+    public ResponseEntity<Map<String, String>> adminAtualizarStatusPagamentoAnteprojeto(
             @PathVariable Long id,
             @RequestBody Map<String, String> request) {
 
@@ -90,8 +102,12 @@ public class ProjetoController {
         ));
     }
 
+    /**
+     * Admin atualiza status de pagamento do Executivo
+     * PATCH /projetos/{id}/admin/status-pagamento/executivo
+     */
     @PatchMapping("/{id}/admin/status-pagamento/executivo")
-    public ResponseEntity<?> adminAtualizarStatusPagamentoExecutivo(
+    public ResponseEntity<Map<String, String>> adminAtualizarStatusPagamentoExecutivo(
             @PathVariable Long id,
             @RequestBody Map<String, String> request) {
 
@@ -106,5 +122,61 @@ public class ProjetoController {
         ));
     }
 
+    // ========== ROTAS PARA CLIENTE (usa codigoAcesso + pinAcesso) ==========
 
+    /**
+     * Cliente valida acesso e verifica liberação
+     * POST /projetos/liberacao
+     */
+    @PostMapping("/liberacao")
+    public ResponseEntity<LiberacaoResponse> verificarLiberacao(@RequestBody ValidarAcessoRequest request) {
+        LiberacaoResponse response = projetoService.verificarLiberacao(request);
+        return ResponseEntity.ok(response);
+    }
+
+    /**
+     * Cliente busca projeto por código de acesso
+     * GET /projetos/buscar?codigoAcesso=ABC123&pinAcesso=1234
+     */
+    @GetMapping("/buscar")
+    public ResponseEntity<Projeto> buscarProjetoPorCodigo(
+            @RequestParam String codigoAcesso,
+            @RequestParam String pinAcesso) {
+
+        Projeto projeto = projetoService.buscarProjetoPorCodigoEPin(codigoAcesso, pinAcesso);
+        return ResponseEntity.ok(projeto);
+    }
+
+    /**
+     * Cliente baixa PDF Anteprojeto
+     * GET /projetos/download/anteprojeto?codigoAcesso=ABC123&pinAcesso=1234
+     */
+    @GetMapping("/download/anteprojeto")
+    public ResponseEntity<byte[]> downloadAnteprojeto(
+            @RequestParam String codigoAcesso,
+            @RequestParam String pinAcesso) {
+
+        byte[] conteudo = projetoService.baixarPdfAnteprojeto(codigoAcesso, pinAcesso);
+
+        return ResponseEntity.ok().header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"anteprojeto.pdf\"")
+                .contentType(MediaType.APPLICATION_PDF)
+                .body(conteudo);
+    }
+
+    /**
+     * Cliente baixa PDF Executivo
+     * GET /projetos/download/executivo?codigoAcesso=ABC123&pinAcesso=1234
+     */
+    @GetMapping("/download/executivo")
+    public ResponseEntity<byte[]> downloadExecutivo(
+            @RequestParam String codigoAcesso,
+            @RequestParam String pinAcesso) {
+
+        byte[] conteudo = projetoService.baixarPdfExecutivo(codigoAcesso, pinAcesso);
+
+        return ResponseEntity.ok()
+                .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"executivo.pdf\"")
+                .contentType(MediaType.APPLICATION_PDF)
+                .body(conteudo);
+    }
 }

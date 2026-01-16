@@ -3,9 +3,11 @@ package com.metrica.liberacao.dto;
 public class LiberacaoResponse {
 
     private boolean acessoValido;
-
     private boolean anteprojetoLiberado;
     private boolean executivoLiberado;
+
+    private Long projetoId;  // ← ADICIONAR
+    private String nomeCliente;
 
     private String mensagem;
     private String qrCode;
@@ -26,4 +28,10 @@ public class LiberacaoResponse {
 
     public String getQrCode() {return qrCode;}
     public void setQrCode(String qrCode) {this.qrCode = qrCode;}
+
+    public Long getProjetoId() {return projetoId;}
+    public void setProjetoId(Long projetoId) {this.projetoId = projetoId;}
+
+    public String getNomeCliente() {return nomeCliente;}
+    public void setNomeCliente(String nomeCliente) {this.nomeCliente = nomeCliente;}
 }

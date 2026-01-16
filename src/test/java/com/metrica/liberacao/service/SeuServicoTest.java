@@ -23,93 +23,135 @@ class SeuServicoTest {
     @InjectMocks
     private ProjetoService servico;
 
+    // ========== TESTES USANDO codigoAcesso + PIN (Cliente) ==========
+
     @Test
-    void testBaixarPdfAnteprojeto() {
-        Long id = 1L;
+    void testBaixarPdfAnteprojeto_Sucesso() {
+        String codigoAcesso = "ABC123";
         String pinValido = "1234";
         Projeto projetoMock = new Projeto();
-        projetoMock.setId(id);
-        projetoMock.setPinAcesso("1234");
+        projetoMock.setId(1L);
+        projetoMock.setCodigoAcesso(codigoAcesso);
+        projetoMock.setPinAcesso(pinValido);
         projetoMock.setStatusAnteprojeto(StatusAnteprojeto.PAGO);
         projetoMock.setPdfAnteprojeto(new byte[]{1, 2, 3});
 
-        when(repositorio.findById(id)).thenReturn(Optional.of(projetoMock));
+        when(repositorio.findByCodigoAcesso(codigoAcesso)).thenReturn(Optional.of(projetoMock));
 
-        var resultado = servico.baixarPdfAnteprojeto(id, pinValido);
+        byte[] resultado = servico.baixarPdfAnteprojeto(codigoAcesso, pinValido);
 
         assertNotNull(resultado);
         assertArrayEquals(new byte[]{1, 2, 3}, resultado);
-        verify(repositorio, times(1)).findById(id);
+        verify(repositorio, times(1)).findByCodigoAcesso(codigoAcesso);
     }
 
-
     @Test
-    void testBaixarPdfAnteprojetoProjetoNaoEncontrado() {
-        Long id = 999L;
+    void testBaixarPdfAnteprojeto_ProjetoNaoEncontrado() {
+        String codigoAcesso = "XYZ999";
         String pinValido = "1234";
 
-        when(repositorio.findById(anyLong())).thenReturn(Optional.empty());
+        when(repositorio.findByCodigoAcesso(codigoAcesso)).thenReturn(Optional.empty());
 
-        assertThrows(Exception.class, () -> servico.baixarPdfAnteprojeto(id, pinValido));
-        verify(repositorio, times(1)).findById(id);
+        assertThrows(IllegalArgumentException.class, () ->
+                servico.baixarPdfAnteprojeto(codigoAcesso, pinValido));
+
+        verify(repositorio, times(1)).findByCodigoAcesso(codigoAcesso);
     }
 
     @Test
     void testBaixarPdfAnteprojeto_PinInvalido() {
-        Long id = 1L;
+        String codigoAcesso = "ABC123";
         String pinInvalido = "9999";
         Projeto projetoMock = new Projeto();
-        projetoMock.setId(id);
+        projetoMock.setId(1L);
+        projetoMock.setCodigoAcesso(codigoAcesso);
         projetoMock.setPinAcesso("1234");
         projetoMock.setStatusAnteprojeto(StatusAnteprojeto.PAGO);
 
-        when(repositorio.findById(anyLong())).thenReturn(Optional.of(projetoMock));
+        when(repositorio.findByCodigoAcesso(codigoAcesso)).thenReturn(Optional.of(projetoMock));
 
-        assertThrows(Exception.class, () -> servico.baixarPdfAnteprojeto(id, pinInvalido));
+        assertThrows(Exception.class, () ->
+                servico.baixarPdfAnteprojeto(codigoAcesso, pinInvalido));
     }
 
     @Test
     void testBaixarPdfAnteprojeto_StatusNaoPago() {
-        Long id = 1L;
+        String codigoAcesso = "ABC123";
         String pinValido = "1234";
         Projeto projetoMock = new Projeto();
-        projetoMock.setId(id);
-        projetoMock.setPinAcesso("1234");
+        projetoMock.setId(1L);
+        projetoMock.setCodigoAcesso(codigoAcesso);
+        projetoMock.setPinAcesso(pinValido);
         projetoMock.setStatusAnteprojeto(StatusAnteprojeto.PENDENTE);
         projetoMock.setPdfAnteprojeto(new byte[]{1, 2, 3});
 
-        when(repositorio.findById(anyLong())).thenReturn(Optional.of(projetoMock));
+        when(repositorio.findByCodigoAcesso(codigoAcesso)).thenReturn(Optional.of(projetoMock));
 
-        assertThrows(Exception.class, () -> servico.baixarPdfAnteprojeto(id, pinValido));
+        assertThrows(IllegalStateException.class, () ->
+                servico.baixarPdfAnteprojeto(codigoAcesso, pinValido));
     }
 
     @Test
     void testBaixarPdfAnteprojeto_PdfNulo() {
-        Long id = 1L;
+        String codigoAcesso = "ABC123";
         String pinValido = "1234";
         Projeto projetoMock = new Projeto();
-        projetoMock.setId(id);
-        projetoMock.setPinAcesso("1234");
+        projetoMock.setId(1L);
+        projetoMock.setCodigoAcesso(codigoAcesso);
+        projetoMock.setPinAcesso(pinValido);
         projetoMock.setStatusAnteprojeto(StatusAnteprojeto.PAGO);
         projetoMock.setPdfAnteprojeto(null);
 
-        when(repositorio.findById(anyLong())).thenReturn(Optional.of(projetoMock));
+        when(repositorio.findByCodigoAcesso(codigoAcesso)).thenReturn(Optional.of(projetoMock));
 
-        assertThrows(Exception.class, () -> servico.baixarPdfAnteprojeto(id, pinValido));
+        assertThrows(IllegalStateException.class, () ->
+                servico.baixarPdfAnteprojeto(codigoAcesso, pinValido));
+    }
+
+    // ========== TESTES USANDO ID (Admin) ==========
+
+    @Test
+    void testBuscarProjetoPorId_Sucesso() {
+        Long id = 1L;
+        Projeto projetoMock = new Projeto();
+        projetoMock.setId(id);
+        projetoMock.setCodigoAcesso("ABC123");
+
+        when(repositorio.findById(id)).thenReturn(Optional.of(projetoMock));
+
+        Projeto resultado = servico.buscarProjetoOuFalhar(id);
+
+        assertNotNull(resultado);
+        assertEquals(id, resultado.getId());
+        verify(repositorio, times(1)).findById(id);
     }
 
     @Test
+    void testBuscarProjetoPorId_NaoEncontrado() {
+        Long id = 999L;
+
+        when(repositorio.findById(id)).thenReturn(Optional.empty());
+
+        assertThrows(IllegalArgumentException.class, () ->
+                servico.buscarProjetoOuFalhar(id));
+
+        verify(repositorio, times(1)).findById(id);
+    }
+
+    // ========== TESTE DO REPOSITORY ==========
+
+    @Test
     void testFindByCodigoAcesso() {
-        String codigo = "ABC123";
+        String codigoAcesso = "ABC123";
         Projeto projetoMock = new Projeto();
         projetoMock.setId(1L);
-        projetoMock.setCodigoAcesso(codigo);
+        projetoMock.setCodigoAcesso(codigoAcesso);
 
-        when(repositorio.findByCodigoAcesso(codigo)).thenReturn(Optional.of(projetoMock));
+        when(repositorio.findByCodigoAcesso(codigoAcesso)).thenReturn(Optional.of(projetoMock));
 
-        Optional<Projeto> resultado = repositorio.findByCodigoAcesso(codigo);
+        Optional<Projeto> resultado = repositorio.findByCodigoAcesso(codigoAcesso);
 
         assertTrue(resultado.isPresent());
-        assertEquals(codigo, resultado.get().getCodigoAcesso());
+        assertEquals(codigoAcesso, resultado.get().getCodigoAcesso());
     }
 }

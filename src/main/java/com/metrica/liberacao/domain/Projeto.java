@@ -4,6 +4,8 @@ import com.metrica.liberacao.domain.status.StatusAnteprojeto;
 import com.metrica.liberacao.domain.status.StatusExecutivo;
 import jakarta.persistence.*;
 
+import java.util.UUID;
+
 @Entity
 @Table(name = "projetos")
 public class Projeto {

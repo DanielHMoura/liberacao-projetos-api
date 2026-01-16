@@ -2,6 +2,8 @@ package com.metrica.liberacao.domain;
 
 import jakarta.persistence.*;
 
+import java.util.UUID;
+
 @Entity
 @Table(name = "admin")
 public class Admin {

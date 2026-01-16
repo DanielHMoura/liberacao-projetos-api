@@ -7,33 +7,30 @@ import com.metrica.liberacao.dto.CriarProjetoRequest;
 import com.metrica.liberacao.dto.LiberacaoResponse;
 import com.metrica.liberacao.dto.ValidarAcessoRequest;
 import com.metrica.liberacao.exception.AcessoInvalidoException;
-import com.metrica.liberacao.exception.ArquivoInvalidoException;
-import com.metrica.liberacao.exception.ProjetoNaoEncontradoException;
 import com.metrica.liberacao.repository.ProjetoRepository;
 import com.metrica.liberacao.util.QRCodeGenerator;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
 import java.util.Base64;
-import java.util.Optional;
 
 @Service
 public class ProjetoService {
 
     private final ProjetoRepository projetoRepository;
+    private final QRCodeGenerator qrCodeGenerator;
 
-    public ProjetoService(ProjetoRepository projetoRepository) {
+    public ProjetoService(ProjetoRepository projetoRepository, QRCodeGenerator qrCodeGenerator) {
         this.projetoRepository = projetoRepository;
+        this.qrCodeGenerator = qrCodeGenerator;
     }
 
-    @Autowired
-    private ProjetoRepository repositorio;
+    // ========== MÉTODOS DE CRIAÇÃO E BUSCA ==========
 
-    @Autowired
-    private QRCodeGenerator qrCodeGenerator;
-
+    /**
+     * Cria um novo projeto (Admin)
+     */
     public Projeto criarProjeto(CriarProjetoRequest request) {
         if (projetoRepository.findByCodigoAcesso(request.getCodigoAcesso()).isPresent()) {
             throw new IllegalArgumentException("Código de acesso já existe");
@@ -49,26 +46,20 @@ public class ProjetoService {
         return projetoRepository.save(projeto);
     }
 
+    /**
+     * Busca projeto por ID interno (Admin)
+     */
     public Projeto buscarProjetoOuFalhar(Long id) {
         return projetoRepository.findById(id)
-                .orElseThrow(() -> new ProjetoNaoEncontradoException(id));
+                .orElseThrow(() -> new IllegalArgumentException("Projeto não encontrado com ID: " + id));
     }
 
-
-    public boolean podeLiberarDownloadAnteprojeto(Long id) {
-        Optional<Projeto> projeto = projetoRepository.findById(id);
-        return projeto.isPresent()
-                && projeto.get().getStatusAnteprojeto() == StatusAnteprojeto.PAGO;
-    }
-
-    public boolean podeLiberarDownloadExecutivo(Long id) {
-        Optional<Projeto> projeto = projetoRepository.findById(id);
-        return projeto.isPresent()
-                && projeto.get().getStatusExecutivo() == StatusExecutivo.PAGO;
-    }
-
-    public Projeto validarAcesso(Long id, String pinAcesso) {
-        Projeto projeto = buscarProjetoOuFalhar(id);
+    /**
+     * Busca projeto por código de acesso + PIN (Cliente)
+     */
+    public Projeto buscarProjetoPorCodigoEPin(String codigoAcesso, String pinAcesso) {
+        Projeto projeto = projetoRepository.findByCodigoAcesso(codigoAcesso)
+                .orElseThrow(() -> new IllegalArgumentException("Projeto não encontrado com código: " + codigoAcesso));
 
         if (!projeto.getPinAcesso().equals(pinAcesso)) {
             throw new AcessoInvalidoException(pinAcesso);
@@ -77,17 +68,45 @@ public class ProjetoService {
         return projeto;
     }
 
+    /**
+     * Salva projeto (usado para atualizações)
+     */
+    public Projeto salvarProjeto(Projeto projeto) {
+        return projetoRepository.save(projeto);
+    }
+
+    // ========== MÉTODOS DE VALIDAÇÃO DE LIBERAÇÃO ==========
+
+    /**
+     * Verifica se pode liberar download do Anteprojeto
+     */
+    public boolean podeLiberarDownloadAnteprojeto(String codigoAcesso) {
+        return projetoRepository.findByCodigoAcesso(codigoAcesso)
+                .map(projeto -> projeto.getStatusAnteprojeto() == StatusAnteprojeto.PAGO)
+                .orElse(false);
+    }
+
+    /**
+     * Verifica se pode liberar download do Executivo
+     */
+    public boolean podeLiberarDownloadExecutivo(String codigoAcesso) {
+        return projetoRepository.findByCodigoAcesso(codigoAcesso)
+                .map(projeto -> projeto.getStatusExecutivo() == StatusExecutivo.PAGO)
+                .orElse(false);
+    }
+
+    /**
+     * Verifica liberação e gera QR Code se necessário (Cliente)
+     */
     public LiberacaoResponse verificarLiberacao(ValidarAcessoRequest request) {
-        Projeto projeto = buscarProjetoOuFalhar(request.getProjetoId());
+        // ✅ CORRIGIDO: usa codigoAcesso, não pinAcesso
+        Projeto projeto = buscarProjetoPorCodigoEPin(request.getCodigoAcesso(), request.getPinAcesso());
+
         LiberacaoResponse response = new LiberacaoResponse();
 
-        if (!projeto.getPinAcesso().equals(request.getPinAcesso())) {
-            response.setAcessoValido(false);
-            response.setMensagem("PIN de acesso inválido.");
-            return response;
-        }
-
         response.setAcessoValido(true);
+        response.setProjetoId(projeto.getId());  // ✅ Agora funciona
+        response.setNomeCliente(projeto.getNomeCliente());  // ✅ Agora funciona
 
         boolean anteprojetoPago = projeto.getStatusAnteprojeto() == StatusAnteprojeto.PAGO;
         boolean executivoPago = projeto.getStatusExecutivo() == StatusExecutivo.PAGO;
@@ -95,19 +114,24 @@ public class ProjetoService {
         response.setAnteprojetoLiberado(anteprojetoPago);
         response.setExecutivoLiberado(executivoPago);
 
+        // Gera QR Code apenas se algum projeto NÃO estiver pago
         if (!anteprojetoPago || !executivoPago) {
-            String qrCodeData = "projeto:" + projeto.getId() + "|pin:" + request.getPinAcesso();
+            String qrCodeData = String.format("projeto:%s|pin:%s",
+                    projeto.getCodigoAcesso(),
+                    request.getPinAcesso());
+
             byte[] qrCodeBytes = qrCodeGenerator.gerar(qrCodeData, 200, 200);
             String qrCodeBase64 = Base64.getEncoder().encodeToString(qrCodeBytes);
             response.setQrCode(qrCodeBase64);
         }
 
+        // Define mensagem baseada no status
         if (anteprojetoPago && executivoPago) {
             response.setMensagem("Todos os projetos liberados para download.");
         } else if (anteprojetoPago) {
-            response.setMensagem("Apenas o anteprojeto está liberado para download.");
+            response.setMensagem("Apenas o anteprojeto está liberado para download. Escaneie o QR Code para pagar o executivo.");
         } else if (executivoPago) {
-            response.setMensagem("Apenas o projeto executivo está liberado para download.");
+            response.setMensagem("Apenas o projeto executivo está liberado para download. Escaneie o QR Code para pagar o anteprojeto.");
         } else {
             response.setMensagem("Nenhum projeto está liberado para download. Escaneie o QR Code para efetuar o pagamento.");
         }
@@ -116,76 +140,110 @@ public class ProjetoService {
     }
 
 
+    // ========== MÉTODOS DE UPLOAD DE PDF (Admin) ==========
+
+    /**
+     * Salva PDF do Anteprojeto (Admin)
+     */
     public void salvarPdfAnteprojeto(Long id, MultipartFile file) {
+        validarArquivoPdf(file);
+
         Projeto projeto = buscarProjetoOuFalhar(id);
-
-        if (file.isEmpty()) {
-            throw new IllegalArgumentException("O arquivo enviado está vazio.");
-        }
-
-        if (!"application/pdf".equals(file.getContentType())) {
-            throw new ArquivoInvalidoException("O arquivo enviado não é um PDF.");
-        }
-
         try {
             projeto.setPdfAnteprojeto(file.getBytes());
             projetoRepository.save(projeto);
         } catch (IOException e) {
-            throw new ArquivoInvalidoException("Erro ao processar o arquivo: " + e.getMessage());
+            throw new RuntimeException("Erro ao salvar PDF do anteprojeto", e);
         }
     }
 
+    /**
+     * Salva PDF do Executivo (Admin)
+     */
     public void salvarPdfExecutivo(Long id, MultipartFile file) {
+        validarArquivoPdf(file);
+
         Projeto projeto = buscarProjetoOuFalhar(id);
-
-        if (file.isEmpty()) {
-            throw new IllegalArgumentException("O arquivo enviado está vazio.");
-        }
-
-        if (!"application/pdf".equals(file.getContentType())) {
-            throw new ArquivoInvalidoException("O arquivo enviado não é um PDF.");
-        }
-
         try {
             projeto.setPdfExecutivo(file.getBytes());
             projetoRepository.save(projeto);
         } catch (IOException e) {
-            throw new ArquivoInvalidoException("Erro ao processar o arquivo: " + e.getMessage());
+            throw new RuntimeException("Erro ao salvar PDF do executivo", e);
         }
     }
 
-    public byte[] baixarPdfAnteprojeto(Long id, String pinAcesso) {
-        Projeto projeto = validarAcesso(id, pinAcesso);
+    /**
+     * Valida se o arquivo é PDF e respeita o tamanho máximo
+     */
+    private void validarArquivoPdf(MultipartFile file) {
+        if (file == null || file.isEmpty()) {
+            throw new IllegalArgumentException("Arquivo não pode ser vazio");
+        }
+
+        String contentType = file.getContentType();
+        if (!"application/pdf".equals(contentType)) {
+            throw new IllegalArgumentException("Apenas arquivos PDF são permitidos");
+        }
+
+        long tamanhoMaximo = 10 * 1024 * 1024; // 10MB
+        if (file.getSize() > tamanhoMaximo) {
+            throw new IllegalArgumentException("Arquivo muito grande (máximo: 10MB)");
+        }
+    }
+
+    // ========== MÉTODOS DE DOWNLOAD DE PDF (Cliente) ==========
+
+    /**
+     * Baixa PDF do Anteprojeto (Cliente)
+     */
+    public byte[] baixarPdfAnteprojeto(String codigoAcesso, String pinAcesso) {
+        Projeto projeto = buscarProjetoPorCodigoEPin(codigoAcesso, pinAcesso);
 
         if (projeto.getStatusAnteprojeto() != StatusAnteprojeto.PAGO) {
-            throw new IllegalArgumentException("Anteprojeto não está liberado para download.");
+            throw new IllegalStateException("Anteprojeto ainda não foi pago. Status atual: " + projeto.getStatusAnteprojeto());
         }
 
         if (projeto.getPdfAnteprojeto() == null || projeto.getPdfAnteprojeto().length == 0) {
-            throw new ArquivoInvalidoException("Anteprojeto não foi enviado.");
+            throw new IllegalStateException("PDF do anteprojeto não encontrado. Entre em contato com o administrador.");
         }
 
         return projeto.getPdfAnteprojeto();
     }
 
-
-    public byte[] baixarPdfExecutivo(Long id, String pinAcesso) {
-        Projeto projeto = validarAcesso(id, pinAcesso);
+    /**
+     * Baixa PDF do Executivo (Cliente)
+     */
+    public byte[] baixarPdfExecutivo(String codigoAcesso, String pinAcesso) {
+        Projeto projeto = buscarProjetoPorCodigoEPin(codigoAcesso, pinAcesso);
 
         if (projeto.getStatusExecutivo() != StatusExecutivo.PAGO) {
-            throw new IllegalArgumentException("Executivo não está liberado para download.");
+            throw new IllegalStateException("Projeto executivo ainda não foi pago. Status atual: " + projeto.getStatusExecutivo());
         }
 
         if (projeto.getPdfExecutivo() == null || projeto.getPdfExecutivo().length == 0) {
-            throw new ArquivoInvalidoException("Executivo não foi enviado.");
+            throw new IllegalStateException("PDF do executivo não encontrado. Entre em contato com o administrador.");
         }
 
         return projeto.getPdfExecutivo();
     }
 
-    public Projeto salvarProjeto(Projeto projeto) {
+    // ========== MÉTODOS DE ATUALIZAÇÃO DE STATUS (Admin) ==========
+
+    /**
+     * Atualiza status de pagamento do Anteprojeto (Admin)
+     */
+    public Projeto atualizarStatusAnteprojeto(Long id, StatusAnteprojeto novoStatus) {
+        Projeto projeto = buscarProjetoOuFalhar(id);
+        projeto.setStatusAnteprojeto(novoStatus);
         return projetoRepository.save(projeto);
     }
 
-
+    /**
+     * Atualiza status de pagamento do Executivo (Admin)
+     */
+    public Projeto atualizarStatusExecutivo(Long id, StatusExecutivo novoStatus) {
+        Projeto projeto = buscarProjetoOuFalhar(id);
+        projeto.setStatusExecutivo(novoStatus);
+        return projetoRepository.save(projeto);
+    }
 }
