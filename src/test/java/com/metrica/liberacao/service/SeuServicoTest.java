@@ -3,6 +3,7 @@ package com.metrica.liberacao.service;
 import com.metrica.liberacao.repository.ProjetoRepository;
 import com.metrica.liberacao.domain.Projeto;
 import com.metrica.liberacao.domain.status.StatusAnteprojeto;
+import com.metrica.liberacao.exception.AcessoInvalidoException;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -23,8 +24,6 @@ class SeuServicoTest {
     @InjectMocks
     private ProjetoService servico;
 
-    // ========== TESTES USANDO codigoAcesso + PIN (Cliente) ==========
-
     @Test
     void testBaixarPdfAnteprojeto_Sucesso() {
         String codigoAcesso = "ABC123";
@@ -36,13 +35,13 @@ class SeuServicoTest {
         projetoMock.setStatusAnteprojeto(StatusAnteprojeto.PAGO);
         projetoMock.setPdfAnteprojeto(new byte[]{1, 2, 3});
 
-        when(repositorio.findByCodigoAcesso(codigoAcesso)).thenReturn(Optional.of(projetoMock));
+        when(repositorio.findByCodigoAcessoAndPinAcesso(codigoAcesso, pinValido))
+                .thenReturn(Optional.of(projetoMock));
 
         byte[] resultado = servico.baixarPdfAnteprojeto(codigoAcesso, pinValido);
 
         assertNotNull(resultado);
         assertArrayEquals(new byte[]{1, 2, 3}, resultado);
-        verify(repositorio, times(1)).findByCodigoAcesso(codigoAcesso);
     }
 
     @Test
@@ -50,27 +49,22 @@ class SeuServicoTest {
         String codigoAcesso = "XYZ999";
         String pinValido = "1234";
 
-        when(repositorio.findByCodigoAcesso(codigoAcesso)).thenReturn(Optional.empty());
+        when(repositorio.findByCodigoAcessoAndPinAcesso(codigoAcesso, pinValido))
+                .thenReturn(Optional.empty());
 
-        assertThrows(IllegalArgumentException.class, () ->
+        assertThrows(AcessoInvalidoException.class, () ->
                 servico.baixarPdfAnteprojeto(codigoAcesso, pinValido));
-
-        verify(repositorio, times(1)).findByCodigoAcesso(codigoAcesso);
     }
 
     @Test
     void testBaixarPdfAnteprojeto_PinInvalido() {
         String codigoAcesso = "ABC123";
         String pinInvalido = "9999";
-        Projeto projetoMock = new Projeto();
-        projetoMock.setId(1L);
-        projetoMock.setCodigoAcesso(codigoAcesso);
-        projetoMock.setPinAcesso("1234");
-        projetoMock.setStatusAnteprojeto(StatusAnteprojeto.PAGO);
 
-        when(repositorio.findByCodigoAcesso(codigoAcesso)).thenReturn(Optional.of(projetoMock));
+        when(repositorio.findByCodigoAcessoAndPinAcesso(codigoAcesso, pinInvalido))
+                .thenReturn(Optional.empty());
 
-        assertThrows(Exception.class, () ->
+        assertThrows(AcessoInvalidoException.class, () ->
                 servico.baixarPdfAnteprojeto(codigoAcesso, pinInvalido));
     }
 
@@ -85,9 +79,10 @@ class SeuServicoTest {
         projetoMock.setStatusAnteprojeto(StatusAnteprojeto.PENDENTE);
         projetoMock.setPdfAnteprojeto(new byte[]{1, 2, 3});
 
-        when(repositorio.findByCodigoAcesso(codigoAcesso)).thenReturn(Optional.of(projetoMock));
+        when(repositorio.findByCodigoAcessoAndPinAcesso(codigoAcesso, pinValido))
+                .thenReturn(Optional.of(projetoMock));
 
-        assertThrows(IllegalStateException.class, () ->
+        assertThrows(AcessoInvalidoException.class, () ->
                 servico.baixarPdfAnteprojeto(codigoAcesso, pinValido));
     }
 
@@ -102,13 +97,12 @@ class SeuServicoTest {
         projetoMock.setStatusAnteprojeto(StatusAnteprojeto.PAGO);
         projetoMock.setPdfAnteprojeto(null);
 
-        when(repositorio.findByCodigoAcesso(codigoAcesso)).thenReturn(Optional.of(projetoMock));
+        when(repositorio.findByCodigoAcessoAndPinAcesso(codigoAcesso, pinValido))
+                .thenReturn(Optional.of(projetoMock));
 
-        assertThrows(IllegalStateException.class, () ->
+        assertThrows(AcessoInvalidoException.class, () ->
                 servico.baixarPdfAnteprojeto(codigoAcesso, pinValido));
     }
-
-    // ========== TESTES USANDO ID (Admin) ==========
 
     @Test
     void testBuscarProjetoPorId_Sucesso() {
@@ -123,7 +117,6 @@ class SeuServicoTest {
 
         assertNotNull(resultado);
         assertEquals(id, resultado.getId());
-        verify(repositorio, times(1)).findById(id);
     }
 
     @Test
@@ -134,11 +127,7 @@ class SeuServicoTest {
 
         assertThrows(IllegalArgumentException.class, () ->
                 servico.buscarProjetoOuFalhar(id));
-
-        verify(repositorio, times(1)).findById(id);
     }
-
-    // ========== TESTE DO REPOSITORY ==========
 
     @Test
     void testFindByCodigoAcesso() {

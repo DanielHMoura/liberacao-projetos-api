@@ -5,6 +5,7 @@ import com.metrica.liberacao.domain.status.StatusAnteprojeto;
 import com.metrica.liberacao.domain.status.StatusExecutivo;
 import com.metrica.liberacao.dto.CriarProjetoRequest;
 import com.metrica.liberacao.dto.LiberacaoResponse;
+import com.metrica.liberacao.dto.StatusProjetoResponse;
 import com.metrica.liberacao.dto.ValidarAcessoRequest;
 import com.metrica.liberacao.service.ProjetoService;
 import org.springframework.http.HttpHeaders;
@@ -14,6 +15,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.time.LocalDateTime;
 import java.util.Map;
 
 @RestController
@@ -52,10 +54,16 @@ public class ProjetoController {
      * Admin faz upload do PDF Anteprojeto
      * POST /projetos/{id}/upload/anteprojeto
      */
-    @PostMapping("/{id}/upload/anteprojeto")
+    @PostMapping(value = "/{id}/upload/anteprojeto", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<Map<String, String>> uploadAnteprojeto(
             @PathVariable Long id,
             @RequestParam("file") MultipartFile file) {
+
+        if (file.isEmpty()) {
+            return ResponseEntity.badRequest().body(Map.of(
+                    "erro", "Arquivo vazio"
+            ));
+        }
 
         projetoService.salvarPdfAnteprojeto(id, file);
 
@@ -65,14 +73,21 @@ public class ProjetoController {
         ));
     }
 
+
     /**
      * Admin faz upload do PDF Executivo
      * POST /projetos/{id}/upload/executivo
      */
-    @PostMapping("/{id}/upload/executivo")
+    @PostMapping(value = "/{id}/upload/executivo", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<Map<String, String>> uploadExecutivo(
             @PathVariable Long id,
             @RequestParam("file") MultipartFile file) {
+
+        if (file.isEmpty()) {
+            return ResponseEntity.badRequest().body(Map.of(
+                    "erro", "Arquivo vazio"
+            ));
+        }
 
         projetoService.salvarPdfExecutivo(id, file);
 
@@ -82,10 +97,7 @@ public class ProjetoController {
         ));
     }
 
-    /**
-     * Admin atualiza status de pagamento do Anteprojeto
-     * PATCH /projetos/{id}/admin/status-pagamento/anteprojeto
-     */
+
     @PatchMapping("/{id}/admin/status-pagamento/anteprojeto")
     public ResponseEntity<Map<String, String>> adminAtualizarStatusPagamentoAnteprojeto(
             @PathVariable Long id,
@@ -94,6 +106,12 @@ public class ProjetoController {
         Projeto projeto = projetoService.buscarProjetoOuFalhar(id);
         StatusAnteprojeto novoStatus = StatusAnteprojeto.valueOf(request.get("status"));
         projeto.setStatusAnteprojeto(novoStatus);
+
+        // Se marcar como pago, salva a data
+        if (novoStatus == StatusAnteprojeto.PAGO) {
+            projeto.setDataPagamentoAnteprojeto(LocalDateTime.now());
+        }
+
         projetoService.salvarProjeto(projeto);
 
         return ResponseEntity.ok(Map.of(
@@ -102,10 +120,6 @@ public class ProjetoController {
         ));
     }
 
-    /**
-     * Admin atualiza status de pagamento do Executivo
-     * PATCH /projetos/{id}/admin/status-pagamento/executivo
-     */
     @PatchMapping("/{id}/admin/status-pagamento/executivo")
     public ResponseEntity<Map<String, String>> adminAtualizarStatusPagamentoExecutivo(
             @PathVariable Long id,
@@ -114,6 +128,12 @@ public class ProjetoController {
         Projeto projeto = projetoService.buscarProjetoOuFalhar(id);
         StatusExecutivo novoStatus = StatusExecutivo.valueOf(request.get("status"));
         projeto.setStatusExecutivo(novoStatus);
+
+        // Se marcar como pago, salva a data
+        if (novoStatus == StatusExecutivo.PAGO) {
+            projeto.setDataPagamentoExecutivo(LocalDateTime.now());
+        }
+
         projetoService.salvarProjeto(projeto);
 
         return ResponseEntity.ok(Map.of(
@@ -121,6 +141,7 @@ public class ProjetoController {
                 "novoStatus", novoStatus.toString()
         ));
     }
+
 
     // ========== ROTAS PARA CLIENTE (usa codigoAcesso + pinAcesso) ==========
 
@@ -179,4 +200,18 @@ public class ProjetoController {
                 .contentType(MediaType.APPLICATION_PDF)
                 .body(conteudo);
     }
+
+    @GetMapping("/status")
+    public ResponseEntity<StatusProjetoResponse> obterStatus(
+            @RequestParam String codigoAcesso,
+            @RequestParam String pinAcesso) {
+
+        StatusProjetoResponse status = projetoService.obterStatusProjeto(codigoAcesso, pinAcesso);
+        return ResponseEntity.ok(status);
+    }
+
+
+
+
+
 }

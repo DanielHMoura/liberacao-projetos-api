@@ -1,4 +1,4 @@
-package com.muriel.liberacao.controller;
+package com.metrica.liberacao.controller;
 
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RestController;

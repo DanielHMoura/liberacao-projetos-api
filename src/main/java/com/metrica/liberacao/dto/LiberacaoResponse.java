@@ -1,10 +1,15 @@
 package com.metrica.liberacao.dto;
 
+import java.math.BigDecimal;
+
 public class LiberacaoResponse {
 
     private boolean acessoValido;
     private boolean anteprojetoLiberado;
     private boolean executivoLiberado;
+
+    private BigDecimal precoAnteprojeto;
+    private BigDecimal precoExecutivo;
 
     private Long projetoId;  // ← ADICIONAR
     private String nomeCliente;
@@ -34,4 +39,10 @@ public class LiberacaoResponse {
 
     public String getNomeCliente() {return nomeCliente;}
     public void setNomeCliente(String nomeCliente) {this.nomeCliente = nomeCliente;}
+
+    public BigDecimal getPrecoAnteprojeto() {return precoAnteprojeto;}
+    public void setPrecoAnteprojeto(BigDecimal precoAnteprojeto) {this.precoAnteprojeto = precoAnteprojeto;}
+
+    public BigDecimal getPrecoExecutivo() {return precoExecutivo;}
+    public void setPrecoExecutivo(BigDecimal precoExecutivo) {this.precoExecutivo = precoExecutivo;}
 }

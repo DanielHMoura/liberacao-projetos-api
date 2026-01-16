@@ -5,7 +5,7 @@ import com.metrica.liberacao.domain.status.StatusExecutivo;
 import jakarta.persistence.*;
 
 import java.math.BigDecimal;
-import java.util.UUID;
+import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "projetos")
@@ -24,11 +24,17 @@ public class Projeto {
     @Column(nullable = false)
     private String nomeCliente;
 
-    @Column(name = "preco_anteprojeto", precision = 10, scale = 2)
-    private BigDecimal precoAnteprojeto;
+    @Column(name = "valor_anteprojeto")
+    private BigDecimal valorAnteprojeto;
 
-    @Column(name = "preco_executivo", precision = 10, scale = 2)
-    private BigDecimal precoExecutivo;
+    @Column(name = "valor_executivo")
+    private BigDecimal valorExecutivo;
+
+    @Column(name = "data_pagamento_anteprojeto")
+    private LocalDateTime dataPagamentoAnteprojeto;
+
+    @Column(name = "data_pagamento_executivo")
+    private LocalDateTime dataPagamentoExecutivo;
 
     @Enumerated(EnumType.STRING)
     private StatusAnteprojeto statusAnteprojeto;
@@ -42,8 +48,8 @@ public class Projeto {
 
     @Lob
     @Column(name = "pdf_executivo_conteudo")
-    private byte[] pdfExecutivo;
 
+    private byte[] pdfExecutivo;
 
     public Long getId() {return id;}
 
@@ -75,9 +81,17 @@ public class Projeto {
     public byte[] getPdfExecutivo() {return pdfExecutivo;}
     public void setPdfExecutivo(byte[] pdfExecutivo) {this.pdfExecutivo = pdfExecutivo;}
 
-    public BigDecimal getPrecoAnteprojeto() {return precoAnteprojeto;}
-    public void setPrecoAnteprojeto(BigDecimal precoAnteprojeto) {this.precoAnteprojeto = precoAnteprojeto;}
+    public BigDecimal getValorAnteprojeto() {return valorAnteprojeto;}
+    public void setValorAnteprojeto(BigDecimal valorAnteprojeto) {this.valorAnteprojeto = valorAnteprojeto;}
 
-    public BigDecimal getPrecoExecutivo() {return precoExecutivo;}
-    public void setPrecoExecutivo(BigDecimal precoExecutivo) {this.precoExecutivo = precoExecutivo;}
+    public BigDecimal getValorExecutivo() {return valorExecutivo;}
+    public void setValorExecutivo(BigDecimal valorExecutivo) {this.valorExecutivo = valorExecutivo;}
+
+    public LocalDateTime getDataPagamentoAnteprojeto() {return dataPagamentoAnteprojeto;}
+    public void setDataPagamentoAnteprojeto(LocalDateTime dataPagamentoAnteprojeto) {this.dataPagamentoAnteprojeto = dataPagamentoAnteprojeto;}
+
+    public LocalDateTime getDataPagamentoExecutivo() {return dataPagamentoExecutivo;}
+    public void setDataPagamentoExecutivo(LocalDateTime dataPagamentoExecutivo) {this.dataPagamentoExecutivo = dataPagamentoExecutivo;}
+
+
 }
