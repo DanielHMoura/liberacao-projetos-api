@@ -70,6 +70,13 @@ public class ProjetoService {
         response.setAnteprojetoLiberado(anteprojetoPago);
         response.setExecutivoLiberado(executivoPago);
 
+        // Adicionar qrCode: definir payload se não pago, senão null
+        if (!anteprojetoPago || !executivoPago) {
+            response.setQrCode("payload_qr_pix_aqui"); // Substitua pelo payload real do QR Pix
+        } else {
+            response.setQrCode(null);
+        }
+
         if (anteprojetoPago && executivoPago) {
             response.setMensagem("Todos os projetos liberados para download.");
         } else if (anteprojetoPago) {
@@ -155,41 +162,6 @@ public class ProjetoService {
         }
 
         return projeto.getPdfExecutivo();
-    }
-
-
-    public StatusProjetoResponse obterStatusProjeto(String codigoAcesso, String pinAcesso) {
-        Projeto projeto = buscarProjetoPorCodigoEPin(codigoAcesso, pinAcesso);
-        StatusProjetoResponse response = new StatusProjetoResponse();
-
-        processarStatusAnteprojeto(projeto, response);
-        processarStatusExecutivo(projeto, response);
-
-        return response;
-    }
-
-    private void processarStatusAnteprojeto(Projeto projeto, StatusProjetoResponse response) {
-        response.setStatusAnteprojeto(projeto.getStatusAnteprojeto().toString());
-
-        if (projeto.getStatusAnteprojeto() == StatusAnteprojeto.AGUARDANDO_PAGAMENTO) {
-            configurarDownloadAnteprojeto(projeto, response);
-        } else if (projeto.getStatusAnteprojeto() == StatusAnteprojeto.PAGO) {
-            configurarDownloadAnteprojeto(projeto, response);
-        }
-    }
-
-    private void processarStatusExecutivo(Projeto projeto, StatusProjetoResponse response) {
-        if (projeto.getStatusAnteprojeto() != StatusAnteprojeto.PAGO) {
-            return;
-        }
-
-        response.setStatusExecutivo(projeto.getStatusExecutivo().toString());
-
-        if (projeto.getStatusExecutivo() == StatusExecutivo.AGUARDANDO_PAGAMENTO) {
-            configurarDownloadExecutivo(projeto, response);
-        } else if (projeto.getStatusExecutivo() == StatusExecutivo.PAGO) {
-            configurarDownloadExecutivo(projeto, response);
-        }
     }
 
 

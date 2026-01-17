@@ -201,15 +201,37 @@ public class ProjetoController {
                 .body(conteudo);
     }
 
-    @GetMapping("/status")
-    public ResponseEntity<StatusProjetoResponse> obterStatus(
-            @RequestParam String codigoAcesso,
-            @RequestParam String pinAcesso) {
+// ... (imports existentes, incluindo ResponseEntity, HttpHeaders, MediaType)
 
-        StatusProjetoResponse status = projetoService.obterStatusProjeto(codigoAcesso, pinAcesso);
-        return ResponseEntity.ok(status);
+    @PostMapping("/projetos/executivo/download")
+    public ResponseEntity<byte[]> downloadExecutivo(@RequestBody ValidarAcessoRequest request) {
+        try {
+            byte[] pdfBytes = projetoService.baixarPdfExecutivo(request.getCodigoAcesso(), request.getPinAcesso());
+            HttpHeaders headers = new HttpHeaders();
+            headers.setContentType(MediaType.APPLICATION_PDF);
+            return ResponseEntity.ok()
+                    .headers(headers)
+                    .body(pdfBytes);
+        } catch (Exception e) {
+            // Log do erro para depuração
+            return ResponseEntity.status(500).build();
+        }
     }
 
+    @PostMapping("/projetos/anteprojeto/download")
+    public ResponseEntity<byte[]> downloadAnteprojeto(@RequestBody ValidarAcessoRequest request) {
+        try {
+            byte[] pdfBytes = projetoService.baixarPdfAnteprojeto(request.getCodigoAcesso(), request.getPinAcesso());
+            HttpHeaders headers = new HttpHeaders();
+            headers.setContentType(MediaType.APPLICATION_PDF);
+            return ResponseEntity.ok()
+                    .headers(headers)
+                    .body(pdfBytes);
+        } catch (Exception e) {
+            // Log do erro para depuração
+            return ResponseEntity.status(500).build();
+        }
+    }
 
 
 
