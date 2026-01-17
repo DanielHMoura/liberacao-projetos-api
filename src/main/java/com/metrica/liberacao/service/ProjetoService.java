@@ -8,10 +8,8 @@ import com.metrica.liberacao.exception.AcessoInvalidoException;
 import com.metrica.liberacao.repository.ProjetoRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
-
 import java.io.IOException;
-import java.time.LocalDateTime;
-import java.time.temporal.ChronoUnit;
+
 
 @Service
 public class ProjetoService {
@@ -55,7 +53,10 @@ public class ProjetoService {
 
 
     public LiberacaoResponse verificarLiberacao(ValidarAcessoRequest request) {
-        Projeto projeto = buscarProjetoPorCodigoEPin(request.getCodigoAcesso(), request.getPinAcesso());
+        Projeto projeto = buscarProjetoPorCodigoEPin(
+                request.getCodigoAcesso(),
+                request.getPinAcesso()
+        );
 
         LiberacaoResponse response = new LiberacaoResponse();
         response.setAcessoValido(true);
@@ -64,31 +65,33 @@ public class ProjetoService {
         response.setPrecoAnteprojeto(projeto.getValorAnteprojeto());
         response.setPrecoExecutivo(projeto.getValorExecutivo());
 
-        boolean anteprojetoPago = projeto.getStatusAnteprojeto() == StatusAnteprojeto.PAGO;
-        boolean executivoPago = projeto.getStatusExecutivo() == StatusExecutivo.PAGO;
+        boolean anteprojetoPago =
+                projeto.getStatusAnteprojeto() == StatusAnteprojeto.PAGO;
+
+        boolean executivoPago =
+                anteprojetoPago &&
+                        projeto.getStatusExecutivo() == StatusExecutivo.PAGO;
 
         response.setAnteprojetoLiberado(anteprojetoPago);
         response.setExecutivoLiberado(executivoPago);
 
-        // Adicionar qrCode: definir payload se não pago, senão null
-        if (!anteprojetoPago || !executivoPago) {
-            response.setQrCode("payload_qr_pix_aqui"); // Substitua pelo payload real do QR Pix
-        } else {
-            response.setQrCode(null);
-        }
-
         if (anteprojetoPago && executivoPago) {
-            response.setMensagem("Todos os projetos liberados para download.");
+            response.setMensagem(
+                    "Anteprojeto e projeto executivo liberados para download."
+            );
         } else if (anteprojetoPago) {
-            response.setMensagem("Apenas o anteprojeto está liberado para download. Escaneie o QR Code para pagar o executivo.");
-        } else if (executivoPago) {
-            response.setMensagem("Apenas o projeto executivo está liberado para download. Escaneie o QR Code para pagar o anteprojeto.");
+            response.setMensagem(
+                    "Anteprojeto liberado. O projeto executivo ainda não está disponível."
+            );
         } else {
-            response.setMensagem("Nenhum projeto está liberado para download. Escaneie o QR Code para efetuar o pagamento.");
+            response.setMensagem(
+                    "Nenhum projeto está liberado para download."
+            );
         }
 
         return response;
     }
+
 
     public void salvarPdfAnteprojeto(Long id, MultipartFile file) {
         validarArquivoPdf(file);
@@ -162,52 +165,6 @@ public class ProjetoService {
         }
 
         return projeto.getPdfExecutivo();
-    }
-
-
-    private int calcularDiasRestantes(LocalDateTime dataPagamento) {
-        long diasDesdePagemento = ChronoUnit.DAYS.between(dataPagamento, LocalDateTime.now());
-        return 7 - (int) diasDesdePagemento;
-    }
-
-    private void configurarDownloadAnteprojeto(Projeto projeto, StatusProjetoResponse response) {
-        LocalDateTime dataPagamento = projeto.getDataPagamentoAnteprojeto();
-
-        if (dataPagamento == null) {
-            throw new IllegalStateException("Data de pagamento do anteprojeto não registrada");
-        }
-
-        int diasRestantes = calcularDiasRestantes(dataPagamento);
-
-        if (diasRestantes > 0) {
-            response.setAnteprojetoDisponivelDownload(true);
-            response.setDiasRestantesAnteprojeto(diasRestantes);
-            response.setMensagem("Anteprojeto disponível para download por " + diasRestantes + " dias.");
-        } else {
-            response.setAnteprojetoDisponivelDownload(false);
-            response.setMensagem("Prazo de download do anteprojeto expirado.");
-        }
-    }
-
-    private void configurarDownloadExecutivo(Projeto projeto, StatusProjetoResponse response) {
-        LocalDateTime dataPagamento = projeto.getDataPagamentoExecutivo();
-
-        if (dataPagamento == null) {
-            throw new IllegalStateException("Data de pagamento do executivo não registrada");
-        }
-
-        int diasRestantes = calcularDiasRestantes(dataPagamento);
-
-        if (diasRestantes > 0) {
-            response.setExecutivoDisponivelDownload(true);
-            response.setDiasRestantesExecutivo(diasRestantes);
-            response.setMensagem("Projeto executivo disponível para download por " + diasRestantes + " dias.");
-        } else {
-            response.setExecutivoDisponivelDownload(false);
-            response.setMensagem("Prazo de download do executivo expirado.");
-        }
-
-
     }
 
 

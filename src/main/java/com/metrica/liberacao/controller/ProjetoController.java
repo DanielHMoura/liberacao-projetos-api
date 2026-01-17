@@ -97,52 +97,6 @@ public class ProjetoController {
         ));
     }
 
-
-    @PatchMapping("/{id}/admin/status-pagamento/anteprojeto")
-    public ResponseEntity<Map<String, String>> adminAtualizarStatusPagamentoAnteprojeto(
-            @PathVariable Long id,
-            @RequestBody Map<String, String> request) {
-
-        Projeto projeto = projetoService.buscarProjetoOuFalhar(id);
-        StatusAnteprojeto novoStatus = StatusAnteprojeto.valueOf(request.get("status"));
-        projeto.setStatusAnteprojeto(novoStatus);
-
-        // Se marcar como pago, salva a data
-        if (novoStatus == StatusAnteprojeto.PAGO) {
-            projeto.setDataPagamentoAnteprojeto(LocalDateTime.now());
-        }
-
-        projetoService.salvarProjeto(projeto);
-
-        return ResponseEntity.ok(Map.of(
-                "mensagem", "Status do anteprojeto atualizado",
-                "novoStatus", novoStatus.toString()
-        ));
-    }
-
-    @PatchMapping("/{id}/admin/status-pagamento/executivo")
-    public ResponseEntity<Map<String, String>> adminAtualizarStatusPagamentoExecutivo(
-            @PathVariable Long id,
-            @RequestBody Map<String, String> request) {
-
-        Projeto projeto = projetoService.buscarProjetoOuFalhar(id);
-        StatusExecutivo novoStatus = StatusExecutivo.valueOf(request.get("status"));
-        projeto.setStatusExecutivo(novoStatus);
-
-        // Se marcar como pago, salva a data
-        if (novoStatus == StatusExecutivo.PAGO) {
-            projeto.setDataPagamentoExecutivo(LocalDateTime.now());
-        }
-
-        projetoService.salvarProjeto(projeto);
-
-        return ResponseEntity.ok(Map.of(
-                "mensagem", "Status do executivo atualizado",
-                "novoStatus", novoStatus.toString()
-        ));
-    }
-
-
     // ========== ROTAS PARA CLIENTE (usa codigoAcesso + pinAcesso) ==========
 
     /**
