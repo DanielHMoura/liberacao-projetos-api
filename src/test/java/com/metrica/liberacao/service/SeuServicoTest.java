@@ -4,28 +4,36 @@ import com.metrica.liberacao.repository.ProjetoRepository;
 import com.metrica.liberacao.domain.Projeto;
 import com.metrica.liberacao.domain.status.StatusAnteprojeto;
 import com.metrica.liberacao.exception.AcessoInvalidoException;
+import com.metrica.liberacao.repository.StorageService;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.boot.test.mock.mockito.MockBean;
+import software.amazon.awssdk.services.s3.S3Client;
 
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 import static org.junit.jupiter.api.Assertions.*;
 import java.util.Optional;
 
-@ExtendWith(MockitoExtension.class) // ← Apenas essa anotação
+@ExtendWith(MockitoExtension.class)
 class SeuServicoTest {
 
     @Mock
     private ProjetoRepository repositorio;
 
+    @Mock
+    private StorageService storageService;  // Adicionado mock para StorageService
+
+    @MockBean
+    private S3Client s3Client;
+
     @InjectMocks
     private ProjetoService servico;
 
-
-@Test
+    @Test
     void testBaixarPdfAnteprojeto_Sucesso() {
         String codigoAcesso = "ABC123";
         String pinValido = "1234";
@@ -34,10 +42,11 @@ class SeuServicoTest {
         projetoMock.setCodigoAcesso(codigoAcesso);
         projetoMock.setPinAcesso(pinValido);
         projetoMock.setStatusAnteprojeto(StatusAnteprojeto.PAGO);
-        projetoMock.setPdfAnteprojeto(new byte[]{1, 2, 3});
+        projetoMock.setPdfAnteprojeto("projetos/ABC123/anteprojeto.pdf");  // Adicionado
 
         when(repositorio.findByCodigoAcessoAndPinAcesso(codigoAcesso, pinValido))
                 .thenReturn(Optional.of(projetoMock));
+        when(storageService.download(anyString(), anyString())).thenReturn(new byte[]{1, 2, 3});  // Adicionado
 
         byte[] resultado = servico.baixarPdfAnteprojeto(codigoAcesso, pinValido);
 
@@ -77,8 +86,8 @@ class SeuServicoTest {
         projetoMock.setId(1L);
         projetoMock.setCodigoAcesso(codigoAcesso);
         projetoMock.setPinAcesso(pinValido);
-        projetoMock.setStatusAnteprojeto(StatusAnteprojeto.PENDENTE);
-        projetoMock.setPdfAnteprojeto(new byte[]{1, 2, 3});
+        projetoMock.setStatusAnteprojeto(StatusAnteprojeto.AGUARDANDO_PAGAMENTO);
+        projetoMock.setPdfAnteprojeto("conteudoPDF");
 
         when(repositorio.findByCodigoAcessoAndPinAcesso(codigoAcesso, pinValido))
                 .thenReturn(Optional.of(projetoMock));
@@ -96,7 +105,7 @@ class SeuServicoTest {
         projetoMock.setCodigoAcesso(codigoAcesso);
         projetoMock.setPinAcesso(pinValido);
         projetoMock.setStatusAnteprojeto(StatusAnteprojeto.PAGO);
-        projetoMock.setPdfAnteprojeto(null);
+        projetoMock.setPdfAnteprojeto(null);  // Alterado para null
 
         when(repositorio.findByCodigoAcessoAndPinAcesso(codigoAcesso, pinValido))
                 .thenReturn(Optional.of(projetoMock));

@@ -6,18 +6,20 @@ import com.metrica.liberacao.domain.status.StatusExecutivo;
 import com.metrica.liberacao.dto.*;
 import com.metrica.liberacao.exception.AcessoInvalidoException;
 import com.metrica.liberacao.repository.ProjetoRepository;
+import com.metrica.liberacao.repository.StorageService;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
-import java.io.IOException;
 
 
 @Service
 public class ProjetoService {
 
     private final ProjetoRepository projetoRepository;
+    private final StorageService storageService;
 
-    public ProjetoService(ProjetoRepository projetoRepository) {
+    public ProjetoService(ProjetoRepository projetoRepository, StorageService storageService) {
         this.projetoRepository = projetoRepository;
+        this.storageService = storageService;
     }
 
     public Projeto criarProjeto(CriarProjetoRequest request) {
@@ -31,8 +33,8 @@ public class ProjetoService {
         projeto.setNomeCliente(request.getNomeCliente());
         projeto.setValorAnteprojeto(request.getPrecoAnteprojeto());
         projeto.setValorExecutivo(request.getPrecoExecutivo());
-        projeto.setStatusAnteprojeto(StatusAnteprojeto.PENDENTE);
-        projeto.setStatusExecutivo(StatusExecutivo.PENDENTE);
+        projeto.setStatusAnteprojeto(StatusAnteprojeto.AGUARDANDO_PAGAMENTO);
+        projeto.setStatusExecutivo(StatusExecutivo.AGUARDANDO_PAGAMENTO);
 
         return projetoRepository.save(projeto);
     }
@@ -65,12 +67,9 @@ public class ProjetoService {
         response.setPrecoAnteprojeto(projeto.getValorAnteprojeto());
         response.setPrecoExecutivo(projeto.getValorExecutivo());
 
-        boolean anteprojetoPago =
-                projeto.getStatusAnteprojeto() == StatusAnteprojeto.PAGO;
+        boolean anteprojetoPago = projeto.getStatusAnteprojeto() == StatusAnteprojeto.PAGO;
 
-        boolean executivoPago =
-                anteprojetoPago &&
-                        projeto.getStatusExecutivo() == StatusExecutivo.PAGO;
+        boolean executivoPago = projeto.getStatusExecutivo() == StatusExecutivo.PAGO;
 
         response.setAnteprojetoLiberado(anteprojetoPago);
         response.setExecutivoLiberado(executivoPago);
@@ -82,6 +81,10 @@ public class ProjetoService {
         } else if (anteprojetoPago) {
             response.setMensagem(
                     "Anteprojeto liberado. O projeto executivo ainda não está disponível."
+            );
+        } else if (executivoPago) {
+            response.setMensagem(
+                    "Projeto executivo liberado. O anteprojeto ainda não está disponível."
             );
         } else {
             response.setMensagem(
@@ -96,23 +99,19 @@ public class ProjetoService {
     public void salvarPdfAnteprojeto(Long id, MultipartFile file) {
         validarArquivoPdf(file);
         Projeto projeto = buscarProjetoOuFalhar(id);
-        try {
-            projeto.setPdfAnteprojeto(file.getBytes());
-            projetoRepository.save(projeto);
-        } catch (IOException e) {
-            throw new RuntimeException("Erro ao salvar PDF do anteprojeto", e);
-        }
+        String path = "projetos/" + projeto.getCodigoAcesso() + "/anteprojeto.pdf";
+        storageService.upload("projetos", path, file);
+        projeto.setPdfAnteprojeto(path);
+        projetoRepository.save(projeto);
     }
 
     public void salvarPdfExecutivo(Long id, MultipartFile file) {
         validarArquivoPdf(file);
         Projeto projeto = buscarProjetoOuFalhar(id);
-        try {
-            projeto.setPdfExecutivo(file.getBytes());
-            projetoRepository.save(projeto);
-        } catch (IOException e) {
-            throw new RuntimeException("Erro ao salvar PDF do executivo", e);
-        }
+        String path = "projetos/" + projeto.getCodigoAcesso() + "/executivo.pdf";
+        storageService.upload("projetos", path, file);
+        projeto.setPdfExecutivo(path);
+        projetoRepository.save(projeto);
     }
 
     private void validarArquivoPdf(MultipartFile file) {
@@ -125,9 +124,9 @@ public class ProjetoService {
             throw new IllegalArgumentException("Apenas arquivos PDF são permitidos");
         }
 
-        long tamanhoMaximo = 80 * 1024 * 1024;
+        long tamanhoMaximo = 50 * 1024 * 1024;
         if (file.getSize() > tamanhoMaximo) {
-            throw new IllegalArgumentException("Arquivo muito grande (máximo: 80MB)");
+            throw new IllegalArgumentException("Arquivo muito grande (máximo: 50MB)");
         }
     }
 
@@ -140,13 +139,14 @@ public class ProjetoService {
             );
         }
 
-        if (projeto.getPdfAnteprojeto() == null || projeto.getPdfAnteprojeto().length == 0) {
+        String path = projeto.getPdfAnteprojeto();
+        if (path == null || path.isEmpty()) {
             throw new AcessoInvalidoException(
-                    "PDF do anteprojeto não encontrado. Entre em contato com o administrador."
+                    "Caminho do PDF do anteprojeto não encontrado. Entre em contato com o administrador."
             );
         }
 
-        return projeto.getPdfAnteprojeto();
+        return storageService.download("projetos", path);
     }
 
     public byte[] baixarPdfExecutivo(String codigoAcesso, String pinAcesso) {
@@ -154,18 +154,20 @@ public class ProjetoService {
 
         if (projeto.getStatusExecutivo() != StatusExecutivo.PAGO) {
             throw new AcessoInvalidoException(
-                    "Projeto executivo ainda não foi pago. Status atual: " + projeto.getStatusExecutivo()
+                    "Anteprojeto ainda não foi pago. Status atual: " + projeto.getStatusAnteprojeto()
             );
         }
 
-        if (projeto.getPdfExecutivo() == null || projeto.getPdfExecutivo().length == 0) {
+        String path = projeto.getPdfExecutivo();
+        if (path == null || path.isEmpty()) {
             throw new AcessoInvalidoException(
-                    "PDF do executivo não encontrado. Entre em contato com o administrador."
+                    "Caminho do PDF do anteprojeto não encontrado. Entre em contato com o administrador."
             );
         }
 
-        return projeto.getPdfExecutivo();
+        return storageService.download("projetos", path);
     }
+
 
 
 }

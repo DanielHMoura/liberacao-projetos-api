@@ -7,7 +7,6 @@ public class ProjetoResponse {
     private String nomeCliente;
     private BigDecimal precoExecutivo;
     private BigDecimal precoAnteprojeto;
-    private String qrCodeBase64;
 
     public ProjetoResponse() {}
 
@@ -23,6 +22,4 @@ public class ProjetoResponse {
     public BigDecimal getPrecoAnteprojeto() {return precoAnteprojeto;}
     public void setPrecoAnteprojeto(BigDecimal precoAnteprojeto) {this.precoAnteprojeto = precoAnteprojeto;}
 
-    public String getQrCodeBase64() {return qrCodeBase64;}
-    public void setQrCodeBase64(String qrCodeBase64) {this.qrCodeBase64 = qrCodeBase64;}
 }

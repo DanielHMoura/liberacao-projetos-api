@@ -66,25 +66,6 @@
 			<scope>runtime</scope>
 		</dependency>
 
-		<!-- QR Code -->
-		<dependency>
-			<groupId>com.google.zxing</groupId>
-			<artifactId>core</artifactId>
-			<version>3.5.1</version>
-		</dependency>
-		<dependency>
-			<groupId>com.google.zxing</groupId>
-			<artifactId>javase</artifactId>
-			<version>3.5.1</version>
-		</dependency>
-
-		<!-- Rate Limiting -->
-		<dependency>
-			<groupId>com.bucket4j</groupId>
-			<artifactId>bucket4j-core</artifactId>
-			<version>8.10.1</version>
-		</dependency>
-
 		<!-- Testes -->
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
@@ -96,7 +77,11 @@
 			<artifactId>mockito-junit-jupiter</artifactId>
 			<scope>test</scope>
 		</dependency>
-
+		<dependency>
+			<groupId>software.amazon.awssdk</groupId>
+			<artifactId>s3</artifactId>
+			<version>2.20.0</version>  <!-- Ajuste para a versão mais recente se necessário -->
+		</dependency>
 		<dependency>
 			<groupId>org.projectlombok</groupId>
 			<artifactId>lombok</artifactId>
