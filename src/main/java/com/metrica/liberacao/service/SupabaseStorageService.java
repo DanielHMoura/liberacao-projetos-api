@@ -26,15 +26,24 @@ public class SupabaseStorageService implements StorageService {
 
         HttpHeaders headers = new HttpHeaders();
         headers.setBearerAuth(supabaseServiceKey);
-        headers.setContentType(MediaType.APPLICATION_OCTET_STREAM);
+        headers.setContentType(MediaType.APPLICATION_PDF);
 
         try {
-            HttpEntity<byte[]> request = new HttpEntity<>(file.getBytes(), headers);
-            ResponseEntity<String> response = restTemplate.postForEntity(url, request, String.class);
-            return response.getBody();
+            HttpEntity<byte[]> request =
+                    new HttpEntity<>(file.getBytes(), headers);
+
+            restTemplate.exchange(
+                    url,
+                    HttpMethod.PUT,
+                    request,
+                    Void.class
+            );
+
+            // O path é definido por você
+            return path;
+
         } catch (Exception e) {
-            // Trate exceções adequadamente
-            return "Erro no upload";
+            throw new RuntimeException("Erro ao enviar arquivo para o Supabase", e);
         }
     }
 
@@ -44,16 +53,16 @@ public class SupabaseStorageService implements StorageService {
 
         HttpHeaders headers = new HttpHeaders();
         headers.setBearerAuth(supabaseServiceKey);
-        HttpEntity<Void> request = new HttpEntity<>(headers);
-        ResponseEntity<byte[]> response = restTemplate.exchange(url, HttpMethod.GET, request, byte[].class);
-        return response.getBody();
-    }
 
-    private byte[] getBytes(MultipartFile file) {
-        try {
-            return file.getBytes();
-        } catch (Exception e) {
-            throw new RuntimeException("Erro ao ler bytes do arquivo", e);
-        }
+        HttpEntity<Void> request = new HttpEntity<>(headers);
+
+        ResponseEntity<byte[]> response = restTemplate.exchange(
+                url,
+                HttpMethod.GET,
+                request,
+                byte[].class
+        );
+
+        return response.getBody();
     }
 }
