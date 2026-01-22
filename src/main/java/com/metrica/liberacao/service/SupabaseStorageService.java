@@ -15,7 +15,7 @@ public class SupabaseStorageService implements StorageService {
     @Value("${supabase.url}")
     private String supabaseUrl;
 
-    @Value("${supabase.service-key}")
+    @Value("${supabase.secret-key}")
     private String supabaseServiceKey;
 
     private final RestTemplate restTemplate = new RestTemplate();
