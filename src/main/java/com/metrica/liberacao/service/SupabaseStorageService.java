@@ -12,10 +12,10 @@ import org.springframework.web.multipart.MultipartFile;
 @Profile("prod")
 public class SupabaseStorageService implements StorageService {
 
-    @Value("${supabase.url}")
+    @Value("${SUPABASE_URL}")
     private String supabaseUrl;
 
-    @Value("${supabase.secret-key}")
+    @Value("${SUPABASE_SECRET_KEY}")
     private String supabaseServiceKey;
 
     private final RestTemplate restTemplate = new RestTemplate();
