@@ -22,8 +22,6 @@ public class SupabaseStorageService implements StorageService {
 
     @Override
     public String upload(String bucket, String path, MultipartFile file) {
-        // Implementação do upload para o Supabase Storage
-        // Esta é uma implementação simplificada e pode precisar de ajustes conforme a API do Supabase
         String url = supabaseUrl + "/storage/v1/object/" + bucket + "/" + path;
 
         HttpHeaders headers = new HttpHeaders();
