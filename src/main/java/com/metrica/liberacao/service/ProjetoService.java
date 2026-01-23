@@ -66,6 +66,8 @@ public class ProjetoService {
         response.setNomeCliente(projeto.getNomeCliente());
         response.setPrecoAnteprojeto(projeto.getValorAnteprojeto());
         response.setPrecoExecutivo(projeto.getValorExecutivo());
+        response.setStatusAnteprojeto(projeto.getStatusAnteprojeto());
+        response.setStatusExecutivo(projeto.getStatusExecutivo());
 
         boolean anteprojetoPago = projeto.getStatusAnteprojeto() == StatusAnteprojeto.PAGO;
 
@@ -75,22 +77,39 @@ public class ProjetoService {
         response.setExecutivoLiberado(executivoPago);
 
         if (anteprojetoPago && executivoPago) {
+
             response.setMensagem(
                     "Anteprojeto e projeto executivo liberados para download."
             );
+
         } else if (anteprojetoPago) {
+
             response.setMensagem(
-                    "Anteprojeto liberado. O projeto executivo ainda não está disponível."
+                    "Anteprojeto liberado. O projeto executivo está pronto, mas ainda não foi liberado."
             );
+
         } else if (executivoPago) {
+
             response.setMensagem(
                     "Projeto executivo liberado. O anteprojeto ainda não está disponível."
             );
-        } else {
+
+        } else if (
+                projeto.getStatusAnteprojeto() == StatusAnteprojeto.PRONTO ||
+                        projeto.getStatusExecutivo() == StatusExecutivo.PRONTO
+        ) {
+
             response.setMensagem(
-                    "Nenhum projeto está liberado para download."
+                    "Seu projeto está finalizado e pronto. Para liberar o download, é necessário concluir o pagamento."
+            );
+
+        } else {
+
+            response.setMensagem(
+                    "Seu projeto ainda está em andamento."
             );
         }
+
 
         return response;
     }
