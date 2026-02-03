@@ -8,7 +8,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.multipart.MultipartFile;
 
-@Service
+@Service("supabaseStorageService")
 @Profile("prod")
 public class SupabaseStorageService implements StorageService {
 

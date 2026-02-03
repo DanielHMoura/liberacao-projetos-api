@@ -7,6 +7,7 @@ import com.metrica.liberacao.dto.*;
 import com.metrica.liberacao.exception.AcessoInvalidoException;
 import com.metrica.liberacao.repository.ProjetoRepository;
 import com.metrica.liberacao.repository.StorageService;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -17,7 +18,7 @@ public class ProjetoService {
     private final ProjetoRepository projetoRepository;
     private final StorageService storageService;
 
-    public ProjetoService(ProjetoRepository projetoRepository, StorageService storageService) {
+    public ProjetoService(ProjetoRepository projetoRepository, @Qualifier("supabaseStorageService") StorageService storageService) {
         this.projetoRepository = projetoRepository;
         this.storageService = storageService;
     }
