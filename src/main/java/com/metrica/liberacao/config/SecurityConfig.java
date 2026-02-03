@@ -2,6 +2,7 @@ package com.metrica.liberacao.config;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
@@ -33,6 +34,8 @@ public class SecurityConfig {
                         .requestMatchers("/projetos/download/**").permitAll()
                         .requestMatchers("/projetos/executivo/download").permitAll()
                         .requestMatchers("/projetos/anteprojeto/download").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/diagnostico/health").permitAll()
+                        .requestMatchers(HttpMethod.HEAD, "/diagnostico/health").permitAll()
                         // Rotas administrativas
                         .anyRequest().authenticated()
                 )
