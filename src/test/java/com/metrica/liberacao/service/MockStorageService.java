@@ -6,7 +6,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
 @Service("supabaseStorageService")
-@Profile("test")
+@Profile("!prod")
 public class MockStorageService implements StorageService {
 
     @Override
