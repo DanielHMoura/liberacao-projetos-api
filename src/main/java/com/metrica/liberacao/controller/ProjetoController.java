@@ -119,10 +119,6 @@ public class ProjetoController {
         return ResponseEntity.ok(projeto);
     }
 
-    /**
-     * Cliente baixa PDF Anteprojeto
-     * GET /projetos/download/anteprojeto?codigoAcesso=ABC123&pinAcesso=1234
-     */
     @GetMapping("/download/anteprojeto")
     public ResponseEntity<byte[]> downloadAnteprojeto(
             @RequestParam String codigoAcesso,
