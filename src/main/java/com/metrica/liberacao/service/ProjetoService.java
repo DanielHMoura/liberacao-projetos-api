@@ -11,12 +11,30 @@ import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.util.Objects;
+import java.util.regex.Pattern;
+
 
 @Service
 public class ProjetoService {
 
     private final ProjetoRepository projetoRepository;
     private final StorageService storageService;
+    private static final Pattern CODIGO_ACESSO_PATTERN = Pattern.compile("^\\d{3}$");
+    private static final Pattern PIN_ACESSO_PATTERN = Pattern.compile("^\\d{4}$");
+
+    private String normalizar(String valor) {
+        return valor == null ? "" : valor.trim();
+    }
+
+    private void validarFormatoAcesso(String codigoAcesso, String pinAcesso) {
+        if (!CODIGO_ACESSO_PATTERN.matcher(codigoAcesso).matches()) {
+            throw new IllegalArgumentException("Código de acesso deve conter exatamente 3 dígitos numéricos");
+        }
+        if (!PIN_ACESSO_PATTERN.matcher(pinAcesso).matches()) {
+            throw new IllegalArgumentException("PIN de acesso deve conter exatamente 4 dígitos numéricos");
+        }
+    }
 
     public ProjetoService(ProjetoRepository projetoRepository, @Qualifier("supabaseStorageService") StorageService storageService) {
         this.projetoRepository = projetoRepository;
@@ -24,13 +42,18 @@ public class ProjetoService {
     }
 
     public Projeto criarProjeto(CriarProjetoRequest request) {
-        if (projetoRepository.findByCodigoAcesso(request.getCodigoAcesso()).isPresent()) {
+        String codigoNormalizado = normalizar(request.getCodigoAcesso());
+        String pinNormalizado = normalizar(request.getPinAcesso());
+
+        validarFormatoAcesso(codigoNormalizado, pinNormalizado);
+
+        if (projetoRepository.findByCodigoAcesso(codigoNormalizado).isPresent()) {
             throw new IllegalArgumentException("Código de acesso já existe");
         }
 
         Projeto projeto = new Projeto();
-        projeto.setCodigoAcesso(request.getCodigoAcesso());
-        projeto.setPinAcesso(request.getPinAcesso());
+        projeto.setCodigoAcesso(codigoNormalizado);
+        projeto.setPinAcesso(pinNormalizado);
         projeto.setNomeCliente(request.getNomeCliente());
         projeto.setValorAnteprojeto(request.getPrecoAnteprojeto());
         projeto.setValorExecutivo(request.getPrecoExecutivo());
@@ -46,9 +69,22 @@ public class ProjetoService {
     }
 
     public Projeto buscarProjetoPorCodigoEPin(String codigoAcesso, String pinAcesso) {
-        return projetoRepository.findByCodigoAcessoAndPinAcesso(codigoAcesso, pinAcesso)
-                .orElseThrow(() -> new AcessoInvalidoException("Código ou PIN inválidos"));
+        String codigoNormalizado = normalizar(codigoAcesso);
+        String pinNormalizado = normalizar(pinAcesso);
+
+        validarFormatoAcesso(codigoNormalizado, pinNormalizado);
+
+        Projeto projeto = projetoRepository.findByCodigoAcesso(codigoNormalizado)
+                .orElseThrow(() -> new AcessoInvalidoException("Código ou PIN incorreto"));
+
+        String pinProjeto = normalizar(String.valueOf(projeto.getPinAcesso()));
+        if (!Objects.equals(pinProjeto, pinNormalizado)) {
+            throw new AcessoInvalidoException("Código ou PIN incorreto");
+        }
+
+        return projeto;
     }
+
 
     public Projeto salvarProjeto(Projeto projeto) {
         return projetoRepository.save(projeto);
