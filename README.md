@@ -9,8 +9,6 @@
 
 **Sistema robusto para gerenciamento e liberação de projetos de engenharia com controle de acesso, validação de pagamento e armazenamento seguro em nuvem.**
 
-[Documentação da API](./docs/API.md) • [Relatório de Bugs](https://github.com/seu-usuario/liberacao-projetos/issues) • [Solicitar Feature](https://github.com/seu-usuario/liberacao-projetos/issues)
-
 </div>
 
 ---
