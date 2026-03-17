@@ -72,12 +72,10 @@ public class ProjetoService {
         String codigoNormalizado = normalizar(codigoAcesso);
         String pinNormalizado = normalizar(pinAcesso);
 
-        validarFormatoAcesso(codigoNormalizado, pinNormalizado);
-
         Projeto projeto = projetoRepository.findByCodigoAcesso(codigoNormalizado)
                 .orElseThrow(() -> new AcessoInvalidoException("Código ou PIN incorreto"));
 
-        String pinProjeto = normalizar(String.valueOf(projeto.getPinAcesso()));
+        String pinProjeto = normalizar(projeto.getPinAcesso());
         if (!Objects.equals(pinProjeto, pinNormalizado)) {
             throw new AcessoInvalidoException("Código ou PIN incorreto");
         }
@@ -210,14 +208,14 @@ public class ProjetoService {
 
         if (projeto.getStatusExecutivo() != StatusExecutivo.PAGO) {
             throw new AcessoInvalidoException(
-                    "Anteprojeto ainda não foi pago. Status atual: " + projeto.getStatusAnteprojeto()
+                    "Executivo ainda não foi pago. Status atual: " + projeto.getStatusExecutivo()
             );
         }
 
         String path = projeto.getPdfExecutivo();
         if (path == null || path.isEmpty()) {
             throw new AcessoInvalidoException(
-                    "Caminho do PDF do anteprojeto não encontrado. Entre em contato com o administrador."
+                    "Caminho do PDF do executivo não encontrado. Entre em contato com o administrador."
             );
         }
 

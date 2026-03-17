@@ -10,8 +10,6 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.boot.test.mock.mockito.MockBean;
-import software.amazon.awssdk.services.s3.S3Client;
 
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
@@ -25,28 +23,25 @@ class SeuServicoTest {
     private ProjetoRepository repositorio;
 
     @Mock
-    private StorageService storageService;  // Adicionado mock para StorageService
-
-    @MockBean
-    private S3Client s3Client;
+    private StorageService storageService;
 
     @InjectMocks
     private ProjetoService servico;
 
     @Test
     void testBaixarPdfAnteprojeto_Sucesso() {
-        String codigoAcesso = "ABC123";
+        String codigoAcesso = "123";
         String pinValido = "1234";
         Projeto projetoMock = new Projeto();
         projetoMock.setId(1L);
         projetoMock.setCodigoAcesso(codigoAcesso);
         projetoMock.setPinAcesso(pinValido);
         projetoMock.setStatusAnteprojeto(StatusAnteprojeto.PAGO);
-        projetoMock.setPdfAnteprojeto("projetos/ABC123/anteprojeto.pdf");  // Adicionado
+        projetoMock.setPdfAnteprojeto("projetos/123/anteprojeto.pdf");
 
-        when(repositorio.findByCodigoAcessoAndPinAcesso(codigoAcesso, pinValido))
+        when(repositorio.findByCodigoAcesso(codigoAcesso))
                 .thenReturn(Optional.of(projetoMock));
-        when(storageService.download(anyString(), anyString())).thenReturn(new byte[]{1, 2, 3});  // Adicionado
+        when(storageService.download(anyString(), anyString())).thenReturn(new byte[]{1, 2, 3});
 
         byte[] resultado = servico.baixarPdfAnteprojeto(codigoAcesso, pinValido);
 
@@ -56,11 +51,10 @@ class SeuServicoTest {
 
     @Test
     void testBaixarPdfAnteprojeto_ProjetoNaoEncontrado() {
-        String codigoAcesso = "XYZ999";
+        String codigoAcesso = "999";
         String pinValido = "1234";
 
-        when(repositorio.findByCodigoAcessoAndPinAcesso(codigoAcesso, pinValido))
-                .thenReturn(Optional.empty());
+        when(repositorio.findByCodigoAcesso(codigoAcesso)).thenReturn(Optional.empty());
 
         assertThrows(AcessoInvalidoException.class, () ->
                 servico.baixarPdfAnteprojeto(codigoAcesso, pinValido));
@@ -68,11 +62,17 @@ class SeuServicoTest {
 
     @Test
     void testBaixarPdfAnteprojeto_PinInvalido() {
-        String codigoAcesso = "ABC123";
+        String codigoAcesso = "123";
         String pinInvalido = "9999";
 
-        when(repositorio.findByCodigoAcessoAndPinAcesso(codigoAcesso, pinInvalido))
-                .thenReturn(Optional.empty());
+        Projeto projetoMock = new Projeto();
+        projetoMock.setId(1L);
+        projetoMock.setCodigoAcesso(codigoAcesso);
+        projetoMock.setPinAcesso("1234");
+        projetoMock.setStatusAnteprojeto(StatusAnteprojeto.PAGO);
+        projetoMock.setPdfAnteprojeto("projetos/123/anteprojeto.pdf");
+
+        when(repositorio.findByCodigoAcesso(codigoAcesso)).thenReturn(Optional.of(projetoMock));
 
         assertThrows(AcessoInvalidoException.class, () ->
                 servico.baixarPdfAnteprojeto(codigoAcesso, pinInvalido));
@@ -80,7 +80,7 @@ class SeuServicoTest {
 
     @Test
     void testBaixarPdfAnteprojeto_StatusNaoPago() {
-        String codigoAcesso = "ABC123";
+        String codigoAcesso = "123";
         String pinValido = "1234";
         Projeto projetoMock = new Projeto();
         projetoMock.setId(1L);
@@ -89,7 +89,7 @@ class SeuServicoTest {
         projetoMock.setStatusAnteprojeto(StatusAnteprojeto.AGUARDANDO_PAGAMENTO);
         projetoMock.setPdfAnteprojeto("conteudoPDF");
 
-        when(repositorio.findByCodigoAcessoAndPinAcesso(codigoAcesso, pinValido))
+        when(repositorio.findByCodigoAcesso(codigoAcesso))
                 .thenReturn(Optional.of(projetoMock));
 
         assertThrows(AcessoInvalidoException.class, () ->
@@ -98,16 +98,16 @@ class SeuServicoTest {
 
     @Test
     void testBaixarPdfAnteprojeto_PdfNulo() {
-        String codigoAcesso = "ABC123";
+        String codigoAcesso = "123";
         String pinValido = "1234";
         Projeto projetoMock = new Projeto();
         projetoMock.setId(1L);
         projetoMock.setCodigoAcesso(codigoAcesso);
         projetoMock.setPinAcesso(pinValido);
         projetoMock.setStatusAnteprojeto(StatusAnteprojeto.PAGO);
-        projetoMock.setPdfAnteprojeto(null);  // Alterado para null
+        projetoMock.setPdfAnteprojeto(null);
 
-        when(repositorio.findByCodigoAcessoAndPinAcesso(codigoAcesso, pinValido))
+        when(repositorio.findByCodigoAcesso(codigoAcesso))
                 .thenReturn(Optional.of(projetoMock));
 
         assertThrows(AcessoInvalidoException.class, () ->
@@ -119,7 +119,7 @@ class SeuServicoTest {
         Long id = 1L;
         Projeto projetoMock = new Projeto();
         projetoMock.setId(id);
-        projetoMock.setCodigoAcesso("ABC123");
+        projetoMock.setCodigoAcesso("123");
 
         when(repositorio.findById(id)).thenReturn(Optional.of(projetoMock));
 
@@ -141,7 +141,7 @@ class SeuServicoTest {
 
     @Test
     void testFindByCodigoAcesso() {
-        String codigoAcesso = "ABC123";
+        String codigoAcesso = "123";
         Projeto projetoMock = new Projeto();
         projetoMock.setId(1L);
         projetoMock.setCodigoAcesso(codigoAcesso);
