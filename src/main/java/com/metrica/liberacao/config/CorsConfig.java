@@ -18,4 +18,5 @@ public class CorsConfig implements WebMvcConfigurer {
                 .allowedHeaders("*");
 
     }
+    /** correcao do cors para permitir acesso do frontend hospedado em metricaarquitetura.com */
 }
