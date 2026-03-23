@@ -5,6 +5,9 @@ import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.io.ByteArrayInputStream;
+import java.io.InputStream;
+
 @Service("supabaseStorageService")
 @Profile("!prod")
 public class MockStorageService implements StorageService {
@@ -15,7 +18,7 @@ public class MockStorageService implements StorageService {
     }
 
     @Override
-    public byte[] download(String bucket, String path) {
-        return new byte[0];
+    public InputStream download(String bucket, String path) {
+        return new ByteArrayInputStream(new byte[0]);
     }
 }

@@ -8,6 +8,14 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.io.FilterInputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.net.HttpURLConnection;
+import java.net.URI;
+import java.net.URL;
+import java.nio.charset.StandardCharsets;
+
 @Service("supabaseStorageService")
 @Profile("prod")
 public class SupabaseStorageService implements StorageService {
@@ -48,21 +56,39 @@ public class SupabaseStorageService implements StorageService {
     }
 
     @Override
-    public byte[] download(String bucket, String path) {
+    public InputStream download(String bucket, String path) {
         String url = supabaseUrl + "/storage/v1/object/" + bucket + "/" + path;
 
-        HttpHeaders headers = new HttpHeaders();
-        headers.setBearerAuth(supabaseServiceKey);
+        try {
+            URL parsedUrl = URI.create(url).toURL();
+            HttpURLConnection connection = (HttpURLConnection) parsedUrl.openConnection();
+            connection.setRequestMethod("GET");
+            connection.setRequestProperty("Authorization", "Bearer " + supabaseServiceKey);
+            connection.connect();
 
-        HttpEntity<Void> request = new HttpEntity<>(headers);
+            int status = connection.getResponseCode();
+            if (status >= 400) {
+                InputStream errorStream = connection.getErrorStream();
+                String detalhes = errorStream == null
+                        ? "sem detalhes"
+                        : new String(errorStream.readAllBytes(), StandardCharsets.UTF_8);
+                connection.disconnect();
+                throw new RuntimeException("Erro ao fazer download no Supabase. HTTP " + status + ": " + detalhes);
+            }
 
-        ResponseEntity<byte[]> response = restTemplate.exchange(
-                url,
-                HttpMethod.GET,
-                request,
-                byte[].class
-        );
-
-        return response.getBody();
+            InputStream inputStream = connection.getInputStream();
+            return new FilterInputStream(inputStream) {
+                @Override
+                public void close() throws IOException {
+                    try {
+                        super.close();
+                    } finally {
+                        connection.disconnect();
+                    }
+                }
+            };
+        } catch (IOException e) {
+            throw new RuntimeException("Erro ao fazer download no Supabase", e);
+        }
     }
 }

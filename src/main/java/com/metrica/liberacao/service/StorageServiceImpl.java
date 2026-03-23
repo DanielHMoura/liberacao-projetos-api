@@ -11,6 +11,7 @@ import software.amazon.awssdk.core.sync.RequestBody;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
+import java.io.InputStream;
 
 @Service
 @Profile({"test", "default"})
@@ -38,16 +39,12 @@ public class StorageServiceImpl implements StorageService {
     }
 
     @Override
-    public byte[] download(String bucket, String path) {
+    public InputStream download(String bucket, String path) {
         GetObjectRequest getRequest = GetObjectRequest.builder()
                 .bucket(bucket)
                 .key(path)
                 .build();
-        try {
-            return s3Client.getObject(getRequest).readAllBytes();
-        } catch (IOException e) {
-            throw new RuntimeException("Erro ao fazer download", e);
-        }
+        return s3Client.getObject(getRequest);
     }
 
 }

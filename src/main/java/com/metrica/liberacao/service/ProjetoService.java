@@ -11,6 +11,7 @@ import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.io.InputStream;
 import java.util.Objects;
 import java.util.regex.Pattern;
 
@@ -184,7 +185,7 @@ public class ProjetoService {
         }
     }
 
-    public byte[] baixarPdfAnteprojeto(String codigoAcesso, String pinAcesso) {
+    public InputStream baixarPdfAnteprojeto(String codigoAcesso, String pinAcesso) {
         Projeto projeto = buscarProjetoPorCodigoEPin(codigoAcesso, pinAcesso);
 
         if (projeto.getStatusAnteprojeto() != StatusAnteprojeto.PAGO) {
@@ -203,7 +204,7 @@ public class ProjetoService {
         return storageService.download("projetos", path);
     }
 
-    public byte[] baixarPdfExecutivo(String codigoAcesso, String pinAcesso) {
+    public InputStream baixarPdfExecutivo(String codigoAcesso, String pinAcesso) {
         Projeto projeto = buscarProjetoPorCodigoEPin(codigoAcesso, pinAcesso);
 
         if (projeto.getStatusExecutivo() != StatusExecutivo.PAGO) {

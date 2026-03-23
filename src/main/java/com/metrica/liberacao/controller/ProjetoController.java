@@ -11,8 +11,9 @@ import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
+import org.springframework.web.servlet.mvc.method.annotation.StreamingResponseBody;
 
-import java.time.LocalDateTime;
+import java.io.InputStream;
 import java.util.Map;
 
 @RestController
@@ -120,15 +121,27 @@ public class ProjetoController {
     }
 
     @GetMapping("/download/anteprojeto")
-    public ResponseEntity<byte[]> downloadAnteprojeto(
+    public ResponseEntity<StreamingResponseBody> downloadAnteprojeto(
             @RequestParam String codigoAcesso,
             @RequestParam String pinAcesso) {
 
-        byte[] conteudo = projetoService.baixarPdfAnteprojeto(codigoAcesso, pinAcesso);
+        InputStream conteudo = projetoService.baixarPdfAnteprojeto(codigoAcesso, pinAcesso);
 
-        return ResponseEntity.ok().header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"anteprojeto.pdf\"")
+        StreamingResponseBody stream = outputStream -> {
+            try (InputStream inputStream = conteudo) {
+                byte[] buffer = new byte[8192];
+                int bytesRead;
+                while ((bytesRead = inputStream.read(buffer)) != -1) {
+                    outputStream.write(buffer, 0, bytesRead);
+                }
+                outputStream.flush();
+            }
+        };
+
+        return ResponseEntity.ok()
+                .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"anteprojeto.pdf\"")
                 .contentType(MediaType.APPLICATION_PDF)
-                .body(conteudo);
+                .body(stream);
     }
 
     /**
@@ -136,16 +149,27 @@ public class ProjetoController {
      * GET /projetos/download/executivo?codigoAcesso=ABC123&pinAcesso=1234
      */
     @GetMapping("/download/executivo")
-    public ResponseEntity<byte[]> downloadExecutivo(
+    public ResponseEntity<StreamingResponseBody> downloadExecutivo(
             @RequestParam String codigoAcesso,
             @RequestParam String pinAcesso) {
 
-        byte[] conteudo = projetoService.baixarPdfExecutivo(codigoAcesso, pinAcesso);
+        InputStream conteudo = projetoService.baixarPdfExecutivo(codigoAcesso, pinAcesso);
+
+        StreamingResponseBody stream = outputStream -> {
+            try (InputStream inputStream = conteudo) {
+                byte[] buffer = new byte[8192];
+                int bytesRead;
+                while ((bytesRead = inputStream.read(buffer)) != -1) {
+                    outputStream.write(buffer, 0, bytesRead);
+                }
+                outputStream.flush();
+            }
+        };
 
         return ResponseEntity.ok()
                 .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"executivo.pdf\"")
                 .contentType(MediaType.APPLICATION_PDF)
-                .body(conteudo);
+                .body(stream);
     }
 
 

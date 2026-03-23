@@ -14,6 +14,8 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 import static org.junit.jupiter.api.Assertions.*;
+import java.io.ByteArrayInputStream;
+import java.io.InputStream;
 import java.util.Optional;
 
 @ExtendWith(MockitoExtension.class)
@@ -29,7 +31,7 @@ class SeuServicoTest {
     private ProjetoService servico;
 
     @Test
-    void testBaixarPdfAnteprojeto_Sucesso() {
+    void testBaixarPdfAnteprojeto_Sucesso() throws Exception {
         String codigoAcesso = "123";
         String pinValido = "1234";
         Projeto projetoMock = new Projeto();
@@ -41,12 +43,12 @@ class SeuServicoTest {
 
         when(repositorio.findByCodigoAcesso(codigoAcesso))
                 .thenReturn(Optional.of(projetoMock));
-        when(storageService.download(anyString(), anyString())).thenReturn(new byte[]{1, 2, 3});
+        when(storageService.download(anyString(), anyString())).thenReturn(new ByteArrayInputStream(new byte[]{1, 2, 3}));
 
-        byte[] resultado = servico.baixarPdfAnteprojeto(codigoAcesso, pinValido);
+        InputStream resultado = servico.baixarPdfAnteprojeto(codigoAcesso, pinValido);
 
         assertNotNull(resultado);
-        assertArrayEquals(new byte[]{1, 2, 3}, resultado);
+        assertArrayEquals(new byte[]{1, 2, 3}, resultado.readAllBytes());
     }
 
     @Test
